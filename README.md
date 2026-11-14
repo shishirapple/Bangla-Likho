@@ -6,7 +6,7 @@ Write *Banglish* — type `ami` and get **আমি**. Bangla Likho turns phonet
 input into Bengali in any application, with context-aware suggestions right at
 the caret, an optional microphone, and a calm, native-feeling interface.
 
-[![CI](https://github.com/USER/bangla-likho/actions/workflows/ci.yml/badge.svg)](https://github.com/USER/bangla-likho/actions/workflows/ci.yml)
+[![CI](https://github.com/shishirapple/Bangla-Likho/actions/workflows/ci.yml/badge.svg)](https://github.com/shishirapple/Bangla-Likho/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
 ![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)
 
@@ -52,7 +52,7 @@ it anywhere and run `BanglaLikho.exe`.
 **Any distribution — install from source (recommended, no glibc limits):**
 
 ```bash
-git clone https://github.com/USER/bangla-likho.git
+git clone https://github.com/shishirapple/Bangla-Likho.git
 cd bangla-likho
 bash install.sh
 ```

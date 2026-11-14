@@ -10,7 +10,7 @@ Wayland, and how to fix the usual problems.
 ## 1. Quick install (any distribution)
 
 ```bash
-git clone https://github.com/USER/bangla-likho.git
+git clone https://github.com/shishirapple/Bangla-Likho.git
 cd bangla-likho
 bash install.sh
 ```
