@@ -1,0 +1,48 @@
+Bangla Likho V8.0.0 — Productive Morphology & Writing Styles
+==============================================================
+
+What's new:
+- Added a compact, offline Bengali verb morphology layer.
+- Common verb roots are composed with reusable endings, rather than storing
+  each inflected word as a separate dictionary entry.
+- Added user-selectable writing profiles in Settings:
+    * Mixed (recommended): preserves the input's register; default.
+    * Standard colloquial: prefers common চলিত forms.
+    * Conversational: prefers common কথ্য forms.
+    * Literary: prefers সাধুভাষার forms.
+- Added style-aware candidate caching so changing the profile takes effect
+  immediately on the next word.
+- Existing context-aware ranking and local correction learning are retained.
+- No network call or downloaded AI model is added to the keystroke path.
+
+How to change style:
+Bangla Likho tray icon -> Settings / Preferences ->
+বাংলা লেখার ধরন / Bengali writing style -> Save.
+
+Examples:
+Input "likhtesi":
+  Mixed       -> লিখতেছি
+  Standard    -> লিখছি
+  Conversational -> লিখতেছি
+  Literary    -> লিখিতেছি
+
+Input "jaite":
+  Mixed       -> যাইতে
+  Standard    -> যেতে
+  Literary    -> যাইতে
+
+Validation:
+- Python syntax compilation passed.
+- 30 automated tests passed.
+- Offline prediction benchmark: 40/40 top-1 cases passed.
+- Mean candidate latency in this local benchmark: 0.041 ms.
+  This measures the engine candidate function only, not full desktop latency.
+
+Important limitations:
+- Morphology is a lightweight rule-based layer with a curated root set.
+  It is not a complete computational grammar for every Bengali verb.
+- Context adaptation learns from explicit candidate selections and stays local.
+- Full sentence-level semantic understanding, neural language modeling,
+  and universal spelling correction remain future work.
+- Windows/Linux package builds and actual global keyboard integration still
+  require testing on the target OS; this source release is not a compiled EXE.

@@ -1,0 +1,18 @@
+# Bangla Likho runtime dependencies (Windows / Linux)
+#
+# PySide6-Essentials is the trimmed Qt distribution: QtCore, QtGui, QtWidgets
+# and QtNetwork only.  Do not replace it with the full "PySide6" package — that
+# pulls in QtWebEngine/Addons (roughly 1 GB) which this application never uses.
+PySide6-Essentials==6.8.2
+pynput==1.7.7
+sounddevice==0.4.7
+numpy==2.0.2
+SpeechRecognition==3.10.4
+
+# Linux only (global hotkeys on X11)
+python-xlib; sys_platform == "linux"
+
+# Optional, heavier offline voice recognition:
+# faster-whisper
+# Optional neural noise suppression:
+# pyrnnoise

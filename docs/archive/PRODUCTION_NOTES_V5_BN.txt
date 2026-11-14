@@ -1,0 +1,33 @@
+BanglaType V6.0.0 Production Candidate
+======================================
+
+Voice reliability:
+- Audio health monitor checks PortAudio callback freshness.
+- If audio callbacks stall for >2.2 seconds, it attempts to reopen the input stream.
+- If no meaningful input level is observed for 7 seconds, the UI reports a low/no-input warning.
+- Adaptive VAD threshold is more sensitive to quiet laptop microphone input.
+- Audio queue is bounded to avoid unbounded latency.
+- Microphone device name is shown when listening starts.
+- Audio callback remains non-blocking.
+
+Floating UI:
+- Larger 320px minimum width, modern dark panel, explicit status line.
+- Dedicated header drag handle; buttons remain easy to click.
+- Listening/Ready state is visually distinct.
+
+Platforms:
+- Windows 10/11 x64: build_windows.bat (run on Windows).
+- Linux x64: build_linux.sh (run on target Linux/X11).
+- Debian/Ubuntu .deb: build_deb.sh after Linux build.
+- macOS is not included in this release.
+
+Important platform constraint:
+The Linux keyboard backend uses X11 passive grabs. It does not provide native
+Wayland support. For Wayland, a future IBus/Fcitx/Wayland input-method backend
+is required. The current release must be tested in an X11 session.
+
+Production gate:
+- Run on real Windows and Linux machines.
+- Test at least 30 minutes of voice use, device unplug/replug, sleep/resume,
+  default-mic changes, low-volume speech, and multiple monitor placement.
+- Code signing and installer signing are separate release tasks.

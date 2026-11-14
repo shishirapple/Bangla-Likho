@@ -1,0 +1,21 @@
+BANGLA LIKHO 12.0.1 — UI & INSTANCE HOTFIX
+
+এই প্যাচে:
+1. QLocalServer-based single-instance guard যোগ করা হয়েছে। একই desktop session-এ দ্বিতীয়বার চালালে নতুন keyboard hook, tray icon, suggestion popup বা floating panel তৈরি হবে না; চলমান instance সামনে আসবে।
+2. Home-এর duplicate All preferences action ও header-এর duplicate Preferences gear সরানো হয়েছে। Sidebar-এর Preferences এখন একমাত্র global settings entry point।
+3. Quick dialogs থেকে অতিরিক্ত Preferences shortcut সরানো হয়েছে।
+4. Preferences dialog-এ অপ্রয়োজনীয় 500x230 static monitor preview সরিয়ে scrollable layout করা হয়েছে।
+5. Floating control panel-এর width, spacing ও button height কমানো হয়েছে; idle status row আর স্থায়ীভাবে জায়গা নেয় না।
+6. App mark-এ speech surface + Bengali glyph + typing caret-এর custom painter-based icon ব্যবহার করা হয়েছে।
+7. 'oke' ইনপুটে multiple candidate ফেরত আসার regression test যোগ করা হয়েছে; candidate list UI-তে সব configured row দেখানোর ব্যবস্থা আগের মতো বজায় আছে।
+
+VALIDATION:
+- Python compileall: PASS
+- Unit tests: 46/46 PASS
+- Engine candidate check: 'oke' -> 5 candidates in this source bundle
+- ZIP integrity: checked after packaging
+
+LIMITATIONS:
+- PySide6/Qt GUI runtime is not installed in this build environment; native Windows visual QA was not performed here.
+- Windows single-instance interaction, hotkey behaviour and theme persistence must be confirmed in the Windows build.
+- This is a tested source hotfix, not a signed installer or independent security certification.

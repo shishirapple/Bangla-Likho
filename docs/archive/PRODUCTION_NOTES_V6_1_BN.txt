@@ -1,0 +1,39 @@
+BanglaType V6.1 - Prediction Quality & Latency Patch
+=====================================================
+
+Prediction:
+- Added curated Bengali loanword spellings for common app, account, website,
+  business, software, development and workplace vocabulary.
+- Added deterministic exact alias handling: "app" -> "অ্যাপ".
+- Added conservative high-confidence prefix completion for selected prefixes.
+- Reduced default visible candidate count from 8 to 5.
+- Added bounded in-memory candidate cache (512 entries), invalidated on learning.
+- Candidate results are copied on return to prevent caller mutation.
+
+Why this matters:
+- The previous screenshot showed "app" producing "আপ/আপনি/আপনার..." because
+  the engine had no authoritative "app" -> "অ্যাপ" mapping and fuzzy phonetic
+  candidates outranked the intended English loanword.
+- Curated aliases should be expanded using actual user-confirmed corrections,
+  not blindly guessed from every English word.
+
+Remaining work for genuinely higher accuracy:
+- Context-aware ranking using previous committed words (local only).
+- A larger licensed Bengali corpus with frequency and part-of-speech metadata.
+- A test corpus of real Banglish input, especially conjuncts and loanwords.
+- Incremental candidate ranking and profiling on older i3/i5 systems.
+- Optional online correction must be opt-in and privacy-preserving; never send
+  raw keystrokes by default.
+
+Performance:
+- Cache is bounded and in-memory.
+- No background polling or network calls are added.
+
+Verification performed in the development Python environment:
+- 20 automated tests passed.
+- Syntax compilation passed for all Python source files.
+- Candidate microbenchmark (cached calls) was below 0.001 ms/call in this
+  environment; this is not a full end-to-end keystroke latency benchmark.
+- Uncached common-word ranking measured approximately 0.00-0.07 ms/call in
+  this environment; actual OS keyboard-hook, rendering, and text injection
+  latency still needs Windows/Linux hardware measurement.

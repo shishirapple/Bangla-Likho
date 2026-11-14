@@ -1,0 +1,25 @@
+Bangla Likho V7.2.0
+===================
+
+Product display name: Bangla Likho
+Windows executable name: BanglaLikho.exe
+Installer display name: Bangla Likho
+Windows launcher: run_windows.bat
+
+Startup reliability changes:
+- Every launcher exit path reaches a visible pause.
+- Python launcher (py -3) is preferred, python PATH is fallback.
+- Dependencies are import-tested before app launch.
+- Engine smoke test runs before GUI startup.
+- PySide6 import failures are no longer silently hidden.
+- Unhandled startup exceptions are printed with traceback and saved to:
+  %APPDATA%\Bangla Likho\logs\startup-error.log
+
+Data migration:
+- On first launch after rename, existing %APPDATA%\BanglaType data is copied
+  to %APPDATA%\Bangla Likho if the new directory does not already exist.
+- The original BanglaType data folder is retained; it is not deleted.
+
+Important:
+- This is a source release and launcher fix, not a compiled EXE installer.
+- Build the Windows executable on Windows using build_windows.bat.

@@ -1,0 +1,47 @@
+Bangla Likho V11.0.0 — Context Intelligence & Local Learning Controls
+=======================================================================
+
+1) Context-aware prediction
+- Replaced the single exact-context reorder with a lightweight local n-gram
+  backoff reranker.
+- Uses the previous one-word context and previous two-word context.
+- Uses style-specific context counts for mixed, standard, colloquial and sadhu.
+- V9/V10 context model keys remain readable for backward compatibility.
+- Context only reorders candidates already produced by the phonetic/morphology
+  engine; it cannot invent a word or override a curated exact mapping.
+- Sentence-ending punctuation resets the in-memory context window; commas keep it.
+
+2) Adaptive learning controls
+- Accepted first suggestions and explicitly selected alternatives can train local
+  spelling and context preferences.
+- Added Settings checkbox: Enable local adaptive learning.
+- When disabled, the composer does not add new accepted spelling/context events.
+- Existing local user dictionary/context files are retained; disabling learning
+  does not erase prior data.
+- No typed text is sent to an online prediction service.
+
+3) Voice
+- V10 voice pipeline and optional RNNoise support retained unchanged.
+- No new real-time ASR/noise-cancellation claim is made in this release.
+
+4) Validation
+- Python syntax compilation and automated unit tests.
+- Tests cover bigram/trigram backoff, style-separated preferences, sentence
+  context reset, and the learning opt-out.
+- Offline phonetic benchmark measures word candidates only, not sentence
+  semantic understanding.
+
+5) Scope and limits
+- This is a lightweight adaptive n-gram reranker, not a pretrained neural
+  Bengali language model and not full semantic sentence comprehension.
+- Context quality improves as a user accepts/corrects words in repeated contexts.
+- New installations start with little personal context; first sessions may show
+  limited context adaptation.
+- Full neural language modeling is a separate future milestone requiring a
+  compact Bengali corpus/model, licensing review, quantization and device tests.
+
+Build
+- Windows: run build_windows.bat.
+- Optional RNNoise: install_neural_voice.bat.
+- Inno Setup 6: compile installer/BanglaLikho.iss after building.
+- Linux: run build_linux.sh on a supported desktop environment.

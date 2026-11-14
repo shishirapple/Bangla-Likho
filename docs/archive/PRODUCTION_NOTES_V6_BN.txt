@@ -1,0 +1,31 @@
+BanglaType V6.0.0 - Change Log
+==============================
+
+System tray and panel:
+- Minimize floating control panel to the system tray.
+- Tray click toggles panel visibility; double-click restores it.
+- Context menu includes Show/Hide Control Panel, Settings, typing guide and Quit.
+- Panel hide/show state updates the tray menu label.
+
+Hotkeys:
+- Default F10: Bangla / English mode.
+- Default F9: Voice ON / OFF.
+- Settings includes editable key-sequence capture for both shortcuts.
+- Runtime hotkey reconfiguration is applied to Windows and Linux X11 backends.
+- Existing untouched V5 defaults are migrated to F10/F9; explicit user custom keys remain.
+
+Bangla mode:
+- Digits 0-9 emit Bengali numerals ০-৯.
+- Full stop emits Bengali danda (।) when danda_on_period is enabled.
+- Comma remains comma; candidate selection remains 1-9 while composing.
+- Digit fallback after a composed word is localized to Bengali numerals.
+
+Responsiveness:
+- Voice recognizer and microphone startup are initialized on a worker thread.
+- Voice stop releases the stream asynchronously.
+- X11 backend skips redundant keyboard-grab synchronization when the grab set is unchanged.
+
+Validation:
+- Unit tests cover function-key parsing, Bengali numerals, danda, candidate selection,
+  voice normalization and VAD.
+- Native Windows/Linux builds and physical-device testing remain required.

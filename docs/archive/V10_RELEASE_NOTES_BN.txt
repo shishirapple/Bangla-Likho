@@ -1,0 +1,51 @@
+Bangla Likho V10.0.0 — Context Learning & Neural Voice Upgrade
+===============================================================
+
+1) Local adaptive typing
+- Every accepted candidate is now recorded as a local learning signal, including
+  the first suggestion accepted with Space/Enter.
+- Existing user corrections still take priority over the base dictionary.
+- Previous-word context is stored locally and used to reorder ambiguous choices.
+- Typed text is not sent to a prediction service.
+
+2) Optional RNNoise neural denoising
+- Added optional pyrnnoise adapter using the RNNoise neural speech denoiser.
+- Input audio is resampled from the application's 16 kHz mono format to 48 kHz
+  and processed in 480-sample frames, then returned to 16 kHz.
+- Settings offers Off / Light / Medium / Strong / Neural RNNoise.
+- If pyrnnoise is missing or fails at runtime, Neural mode reports the issue and
+  safely falls back to Medium spectral suppression.
+- Install separately with install_neural_voice.bat (Windows) or
+  pip install -r requirements_neural_voice.txt in the application's Python environment.
+
+3) Voice pipeline reliability
+- V9 improvements retained: 12-second phrase segmentation, overlap retention,
+  duplicate-prefix suppression, non-evicting audio queues and adaptive VAD.
+- RNNoise is applied to each completed phrase before ASR. It is not a live
+  microphone monitoring filter and does not change what other applications hear.
+
+4) Validation
+- Automated tests include local acceptance learning and an RNNoise adapter test
+  with a fake denoiser, so no external model is required to run the test suite.
+- Real pyrnnoise model execution, microphone testing and Windows packaging are
+  not performed in this development environment.
+- Run the app on the target Windows PC and test RNNoise with fan, AC, traffic,
+  TV/music and overlapping speech before treating it as production-ready.
+
+5) Limits
+- RNNoise is a neural denoiser, but it is not equivalent to Apple Voice Isolation,
+  multi-microphone beamforming, acoustic echo cancellation or a full speech
+  separation model.
+- It can suppress many background noises but may also attenuate quiet speech.
+- Google voice recognition sends audio to Google's service. Whisper can run locally
+  when installed, but requires model download and sufficient CPU resources.
+- Local learning stores the user's accepted word mappings/context in the app's
+  local configuration directory; users can clear these local data files manually
+  if they want to reset personalization.
+
+Build
+- Windows: run build_windows.bat; automated tests execute before packaging.
+- Optional neural dependency: install_neural_voice.bat before running the build;
+  build_windows.bat detects pyrnnoise and bundles it when present.
+- Inno Setup 6: compile installer/BanglaLikho.iss after building the application.
+- Linux: run build_linux.sh on a supported desktop environment.

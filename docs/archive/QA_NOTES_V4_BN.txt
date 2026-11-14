@@ -1,0 +1,30 @@
+BanglaType V4 QA
+================
+Screenshot regression targets:
+- test -> টেস্ট
+- perform -> পারফর্ম
+- attobisshar -> আত্মবিশ্বাস
+- babohar -> ব্যবহার
+
+UI:
+- Popup supports caret, screen corners, cursor, and bottom-center.
+- Popup repositions on every suggestion refresh.
+- Tray Settings includes a visual miniature monitor preview and typing guide.
+
+Packaging:
+- build_windows.bat creates a PyInstaller onedir application.
+- installer/BanglaType.iss creates a Windows Setup.exe with Start Menu,
+  optional desktop shortcut, optional startup launch, and uninstaller.
+- Setup compiler (Inno Setup 6) must be installed on Windows to build installer.
+
+Not certified:
+- Windows GUI, global keyboard hook, microphone devices, antivirus reputation,
+  code signing, and installer behavior must be tested on physical Windows.
+
+Prediction ranking policy:
+- Exact curated/user-learned mappings return only the authoritative spelling.
+  This prevents low-confidence phonetic garbage from appearing below a correct
+  first suggestion. Unmapped words still use dictionary/fuzzy ranking.
+- Voice phrase audio is automatically level-normalized (bounded gain) before ASR;
+  this can help quiet microphones, but does not replace true streaming ASR.
+- Clicking the tray icon opens Settings; right-click opens the tray menu.

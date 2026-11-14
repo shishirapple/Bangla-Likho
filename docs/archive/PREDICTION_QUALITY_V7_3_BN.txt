@@ -1,0 +1,28 @@
+Bangla Likho V7.3.0 — Prediction Quality Patch
+===============================================
+
+User-reported cases addressed:
+- "guissing", "guessing", "gessing", "gesing", "guesing" -> গেসিং
+- "sadhubhasha" / "shadhubhasha" -> সাধুভাষা
+- Core সাধুভাষা verb forms: লিখিতে, যাইতে, যাইতেছে, হইতেছে,
+  করিতেছে, পারিতেছে and common spelling variants.
+- Common "babostha" spelling -> ব্যবস্থা / ব্যবস্থার.
+
+Engine changes:
+1. Added a curated loanword and সাধুভাষা alias layer.
+2. Reduced overconfident fuzzy suggestions when vowel patterns diverge.
+3. Retained the existing local/offline prediction pipeline.
+4. Added regression tests for the exact reported failure family.
+
+Validation:
+- Python syntax compilation passed.
+- 26 automated tests passed.
+- Exact case smoke tests passed for the new alias set.
+
+Limitations:
+- This is not a full Bengali language model and does not yet perform
+  sentence-level grammatical style conversion.
+- A word not present in the curated aliases or local lexicon can still
+  require user correction. Corrections should be added to the test corpus
+  and learned dictionary, not patched one word at a time without evaluation.
+- Windows runtime / GUI testing must be performed on the target Windows PC.

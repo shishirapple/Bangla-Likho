@@ -1,0 +1,22 @@
+Bangla Likho 12.0.2 — Adaptive Suggestion Regression Fix
+
+Root cause:
+A previously learned spelling in user_dict.json was returned immediately as a
+single candidate. This suppressed alternatives for ambiguous Banglish input
+such as "oke".
+
+Fix:
+- A learned spelling is now promoted to the first position rather than acting
+  as a hard lock.
+- Other phonetic candidates remain available up to the requested limit.
+- Added a regression test that simulates a previously learned "oke" spelling
+  and confirms that alternatives remain visible.
+
+Validation in the build environment:
+- 47 automated tests passed.
+- ZIP integrity verified after packaging.
+
+Important:
+Windows GUI behavior, native keyboard hooks, DPAPI behavior and installer
+execution still require validation on Windows. This package does not claim
+independent security certification or production certification.

@@ -1,0 +1,1 @@
+# Optional neural noise suppression (RNNoise). Install in the same Python environment as Bangla Likho.\npyrnnoise>=0.4.0\n

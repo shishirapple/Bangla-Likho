@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+.build-venv/
+venv/
+
+# Build output
+build/
+dist/
+dist-installer/
+dist-release/
+*.spec.bak
+*.log
+
+# Packaged artifacts
+*.AppImage
+appimagetool*
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

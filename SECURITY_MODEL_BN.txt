@@ -1,0 +1,35 @@
+BANGLA LIKHO 12.0 — SECURITY & PRIVACY MODEL
+
+Default principles
+1. Keyboard conversion, dictionary lookup and adaptive learning run locally.
+2. No Bangla Likho telemetry endpoint, analytics SDK, automatic crash upload, or remote
+   diagnostic channel is configured.
+3. Voice input is opt-in. Google recognition sends captured audio to Google's speech service;
+   the first use now requires explicit consent. Whisper can operate locally when its model and
+   runtime are installed. Model downloads are not performed silently by the application.
+4. Local diagnostic logs are bounded and rotating. They record stack metadata (file basename,
+   function and line) and exception type, not exception messages, source lines, typed text or audio.
+5. No password, typed text or microphone payload is intentionally written to diagnostic logs.
+6. The application does not automatically open URLs or execute downloaded files.
+
+Threat boundaries
+- DPAPI does not protect data from malware running as the same user while the app is unlocked.
+- The app cannot protect a device already compromised by malware, a hostile administrator,
+  keylogger, malicious accessibility tool, or compromised OS/user account.
+- Google voice mode is not offline and is subject to Google's terms and privacy practices.
+- On Windows, local JSON settings and adaptive-learning files are protected with user-scope
+  Windows DPAPI; older plaintext JSON files are migrated on read. On POSIX systems, config folders
+  and JSON files use owner-only permissions (0700/0600). DPAPI protection is tied to the Windows
+  user profile and is not a replacement for full-disk encryption or a backup strategy.
+- Code signing requires a publisher-controlled certificate and secure signing process; a build
+  without a valid certificate must not be described as signed.
+- SHA-256 hashes detect accidental/tampered changes only when compared against an independently
+  trusted release channel. A hash hosted beside a compromised binary is not an authenticity proof.
+
+Release requirements before public distribution
+- Run Windows Defender / reputable malware scanning on the final installer.
+- Generate SHA-256 and publish through a controlled official release channel.
+- Sign installer and binaries with a verified code-signing certificate when available.
+- Review dependency licenses and vulnerabilities; pin and lock production dependencies.
+- Perform GUI, keyboard-hook, microphone, update, install/upgrade/uninstall and rollback tests.
+- Conduct an independent security review before making strong security claims.

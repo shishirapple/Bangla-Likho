@@ -1,0 +1,51 @@
+BanglaType V7.0.0 — Intelligent Bengali Phonetic Engine
+======================================================
+
+What changed
+------------
+1. Added a consonant-skeleton deletion index to retrieve dictionary words
+   with one omitted/extra consonant without scanning the entire dictionary.
+2. Added bounded edit-distance scoring for candidate skeletons.
+3. Added orthography-aware ranking signals for frequent informal Banglish
+   patterns, including omitted y-glides (babostha -> ব্যবস্থা),
+   স্ব-cluster glide omission (shadhinota -> স্বাধীনতা), and ত্ব spelling
+   (dayitto -> দায়িত্ব).
+4. Added a unique-prefix completion path for partial English loanwords
+   (performanc -> পারফরম্যান্স).
+5. Kept exact user-confirmed words and trusted curated spellings authoritative.
+6. Added a repeatable 20-item top-1 smoke benchmark.
+
+Important honesty / scope
+-------------------------
+This version is NOT a neural language model or a general-purpose LLM.
+It is a fast, local, dictionary-backed phonetic retrieval and ranking engine
+with general edit-distance and Bengali orthography-aware rules. It no longer
+depends only on manually adding a separate alias for every word.
+
+The 20/20 benchmark is a small, curated smoke test, not a claim of 100%
+accuracy on all Banglish typing. It must be expanded with thousands of
+reviewed examples from multiple users and dialects before public accuracy
+claims. No user keystrokes are sent to a server.
+
+Next research phase
+-------------------
+- Build a licensed and reviewed Bengali word-frequency corpus.
+- Add phrase-level n-gram/context scoring from a properly licensed sentence
+  corpus; a word list alone cannot provide true contextual prediction.
+- Consider a compact quantized language model only after measuring memory,
+  startup time, CPU and latency on older i3/i5 systems.
+- Add correction feedback UI so a user can correct a candidate and explicitly
+  choose whether it is saved locally.
+- Evaluate Top-1, Top-3, Top-5, keystroke-to-popup latency, CPU, RAM and
+  startup time on physical Windows and Linux machines.
+
+Verification
+------------
+- Python syntax compilation passed.
+- 23 automated unit tests passed.
+- Curated benchmark: 20/20 top-1 on the included 20 examples.
+- Candidate lookup observed mostly sub-millisecond in this development
+  environment; the shadhinota fuzzy retrieval case was about 10 ms cold.
+  This is engine-only timing, not end-to-end keyboard latency.
+- Native Windows/Linux application UI and installers still need target-OS
+  build and hardware testing.

@@ -1,0 +1,60 @@
+Bangla Likho V9.0.0 — Local Phonetic Fidelity, Tense Morphology & Voice Capture
+================================================================================
+
+1) Screenshot-specific typing fixes
+- khaitechilo -> খাইতেছিল
+- khaitechilam -> খাইতেছিলাম
+- kortechilo -> করতেছিল
+- koritechilo -> করিতেছিল
+- jaitechilo -> যাইতেছিল
+- khobori -> খবরি (literal Banglish phonetic form is preserved)
+- khoborite -> খবরিতে
+- Added curated high-confidence spellings for dayitto, poristhiti and shadhinota.
+- For non-curated words, the direct phonetic transliteration is now the first
+  candidate; fuzzy dictionary neighbours remain alternatives. This prevents
+  a nearby dictionary word from silently replacing the user's typed sound.
+
+2) Bengali morphology
+- Added past progressive suffixes: -techilo, -itechilo, -techilam,
+  -itechilam, -techilen, -itechilen and related forms.
+- Added reusable roots for common verbs and preserves Sadhu/colloquial distinctions.
+- Existing writing-style selector remains available.
+
+3) Voice capture and recognition
+- Conservative NumPy spectral gating can reduce steady fan/AC/hum noise.
+- Configurable Off / Light / Medium / Strong control in Settings.
+- Voice Activity Detection uses a slowly adapting ambient-noise estimate.
+- Default phrase-end silence is 0.55 seconds; minimum speech duration is 0.08 s.
+- Phrase maximum increased from 6 to 12 seconds.
+- Forced segment boundaries preserve a short audio overlap.
+- Exact duplicate word prefixes across overlapping ASR chunks are removed.
+- Audio and phrase queues no longer evict older blocks/phrases when ASR is delayed;
+  an explicit backlog warning is shown instead.
+- Google recognizer now inspects returned alternatives and ranks confidence with
+  a small transcript-coverage tie-breaker.
+- faster-whisper uses beam_size=5, best_of=5, temperature=0 and Bengali context prompt.
+
+4) Tests and validation
+- Python syntax compilation is required.
+- Unit tests cover screenshot regressions, morphology, direct phonetic fidelity,
+  noise suppression output integrity, VAD, and overlap de-duplication.
+- Offline benchmark includes the four screenshot problem areas.
+- Benchmark measures local text candidate ranking only; it does not measure
+  full keyboard latency, Google/Whisper transcription accuracy, or real-world
+  noise-cancellation performance.
+
+5) Honest limits
+- The built-in spectral gate is not Apple Voice Isolation, RNNoise, DeepFilterNet,
+  echo cancellation, or microphone-array beamforming.
+- It is best suited to steady background noise such as fan/AC/hum.
+- Overlapping speakers, TV/music, traffic and rapidly changing noise can still
+  cause missed or substituted words.
+- Google voice mode sends audio to Google's speech service. Offline mode requires
+  the optional faster-whisper package and a locally downloaded model.
+- No software can guarantee that every spoken word is captured in every room;
+  test with the actual microphone and environment before relying on it.
+
+Build
+- Windows: run build_windows.bat; it runs the tests before creating dist/BanglaLikho.
+- Inno Setup 6 can then build installer/BanglaLikho.iss.
+- Linux: run build_linux.sh on a supported Linux desktop.

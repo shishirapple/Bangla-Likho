@@ -1,0 +1,29 @@
+SOURCE AUDIT — BASE: BANGLA LIKHO 11.1.0
+
+Findings addressed in this 12.0 source update
+1. Main window used a fixed light-only stylesheet and generic feature cards; replaced with a
+   consistent light/dark/system palette, compact workspace sidebar, settings access and focused
+   quick-action dialogs.
+2. Floating control was fixed dark, oversized and displayed permanent READY/LISTENING labels;
+   replaced with a smaller draggable theme-aware control with clear mode and voice actions.
+3. Suggestion popup used a fixed dark palette; it now follows the application theme and has
+   refined row spacing, type hierarchy and selected-state contrast.
+4. App icon was a generic green circle with text; replaced by a custom emerald Bengali glyph mark
+   shared by app/tray/installer and the startup identity.
+5. Startup had no brand identity; added a short custom splash with animated progress and fade.
+6. Google speech recognition could be started without an explicit first-use disclosure; all app
+   entry points now route through a UI-thread consent gate before Google audio transmission.
+7. Startup diagnostics previously wrote a full traceback including exception text; the new local
+   rotating diagnostics intentionally record exception type and stack metadata only.
+8. POSIX config directory and JSON files now use owner-only permissions; JSON writes are atomic.
+
+Known limitations retained and documented
+- Windows JSON settings and adaptive-learning files are protected with user-scope DPAPI; POSIX
+  uses owner-only permissions rather than application-level encryption.
+- Google voice mode transmits microphone audio to Google's speech service after explicit consent.
+- Whisper is local only when the optional runtime and model are installed.
+- Code signing requires the publisher's certificate; this package does not contain one.
+- No independent penetration test or Windows malware scan has been performed here.
+- PySide6 is unavailable in the current Linux build environment, so native GUI runtime rendering,
+  DPI behavior, Windows hooks, microphone capture and Inno Setup compilation remain Windows release
+  machine gates.

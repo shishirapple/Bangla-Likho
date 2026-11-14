@@ -1,0 +1,18 @@
+BanglaType V4.1 Bug-fix release
+================================
+Fixed:
+1. VoiceTyper called normalize_pcm16() but the function was missing.
+   This raised NameError on every captured phrase, so voice could start
+   listening but failed at transcription. Added safe int16 normalization.
+2. Voice listening state is set before opening the stream so the first
+   callback blocks are not discarded during startup.
+3. Suggestion popup now detects overlap with the floating Bangla/Voice
+   badge and repositions itself to keep both controls visible.
+4. Tray tooltip identifies the running build as v4.1 Bug Fix.
+
+Tests:
+- phonetic dictionary regression tests
+- PCM normalization (quiet, empty, silence)
+- VAD phrase segmentation
+
+Physical Windows microphone and multi-monitor validation still required.

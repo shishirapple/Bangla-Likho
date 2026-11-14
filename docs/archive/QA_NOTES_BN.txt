@@ -1,0 +1,18 @@
+QA / Release Notes
+==================
+Automated checks executed in the available Linux environment:
+- Python unittest suite: 2 tests passed.
+- CLI prediction smoke test:
+  attobisshash -> আত্মবিশ্বাস (top result)
+  atmobisshash -> আত্মবিশ্বাস (top result)
+  ami -> আমি (top result)
+  dhonnobad -> ধন্যবাদ (top result)
+  juktoborno -> যুক্তবর্ণ (top result)
+  uccaron -> উচ্চারণ (top result)
+
+Not tested in this environment:
+- Windows global keyboard hook and injection (requires Windows).
+- Microphone capture / Google Speech API / Whisper model (audio dependencies and microphone unavailable).
+- PyInstaller EXE packaging (PyInstaller and Windows runtime unavailable).
+Do not treat this as a fully production-validated release until Windows integration
+and real microphone tests are completed.

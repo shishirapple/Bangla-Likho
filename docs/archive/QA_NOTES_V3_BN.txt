@@ -1,0 +1,6 @@
+V3 targeted regression checks
+- Added exact aliases for attobisshar/atmobisshar -> আত্মবিশ্বাস
+- Added babohar/byabohar/bebohar -> ব্যবহার
+- Voice VAD threshold lowered and made adaptive; audio block 20ms; silence 300ms.
+- Queue backlog bounded and stop() no longer blocks trying to insert sentinels.
+- Full Windows microphone and EXE integration testing still required.

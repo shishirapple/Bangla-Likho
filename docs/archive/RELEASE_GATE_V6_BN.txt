@@ -1,0 +1,35 @@
+V6 release acceptance gate
+===========================
+
+Tray:
+[ ] Minimize button hides the panel to system tray
+[ ] Tray single-click toggles panel visibility
+[ ] Tray double-click restores panel
+[ ] Context menu Show/Hide label stays synchronized
+[ ] Quit cleanly stops keyboard and voice workers
+
+Hotkeys:
+[ ] F10 toggles Bangla/English on fresh config
+[ ] F9 toggles Voice on fresh config
+[ ] Custom F-key and modifier combinations work
+[ ] Old untouched V5 defaults migrate to F10/F9
+[ ] Explicit previously customized hotkeys are preserved
+
+Bangla mode:
+[ ] 0-9 output Bengali numerals
+[ ] 1-9 still select candidates during composition
+[ ] "." outputs danda (।) outside and after a word
+[ ] comma remains comma
+[ ] English mode preserves Latin digits and punctuation
+
+Responsiveness:
+[ ] Voice initialization does not block UI or keyboard hook
+[ ] Voice shutdown does not block UI
+[ ] X11 backend does not sync unchanged grab sets per key
+[ ] Startup, typing latency, CPU and memory measured on physical systems
+
+Platform:
+[ ] Windows 10/11 x64 build and installer
+[ ] Linux X11 build and Debian package
+[ ] Wayland limitation shown clearly
+[ ] Fresh install, upgrade and uninstall tests

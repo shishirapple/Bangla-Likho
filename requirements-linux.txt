@@ -1,0 +1,18 @@
+# Bangla Likho runtime dependencies — Linux / BSD
+#
+# Version ranges (not hard pins) so the installer works with whatever Python
+# 3.9–3.13 your distribution ships and picks matching binary wheels.
+#
+# PySide6-Essentials is the trimmed Qt build (Core, Gui, Widgets, Network).
+# Do not swap it for the full "PySide6" package: that adds QtWebEngine and the
+# other add-ons (about 1 GB) which this application never uses.
+PySide6-Essentials>=6.8,<6.10
+pynput>=1.7,<2
+python-xlib>=0.33
+sounddevice>=0.4.6,<0.6
+numpy>=2.0,<3
+SpeechRecognition>=3.10,<4
+
+# Optional extras (install manually if you want them):
+# faster-whisper   — offline speech recognition
+# pyrnnoise        — neural noise suppression

@@ -1,0 +1,29 @@
+﻿Bangla Likho â€” Privacy Notice
+Version 12.2.0
+
+Typing and prediction
+- Phonetic conversion, dictionary lookup, contextual ranking and adaptive learning run locally.
+- Typed text is not sent to Bangla Likho servers. This application has no analytics or telemetry
+  endpoint and no automatic crash-report upload.
+- Accepted spellings and local context signals may be stored in the user's Bangla Likho folder.
+
+Voice input
+- Voice input is off until the user enables it.
+- Google recognition requires internet access and sends microphone audio to Google's speech
+  recognition service. The first activation requires explicit user consent.
+- Optional Whisper recognition can run locally after its runtime and model have been installed.
+  This release does not silently download models.
+- Audio is captured only while voice input is enabled.
+
+Diagnostics
+- Diagnostic logs are stored locally, bounded and rotated.
+- Logs intentionally omit typed text, audio, exception messages and source-code lines.
+- Logs are not uploaded automatically. The user may inspect the local diagnostics folder.
+
+Storage and security
+- User settings and adaptive-learning data are stored in the user's local application-data folder.
+- This release does not claim application-level encryption for every local data file. Protect the
+  Windows/Linux account and use full-disk encryption where available.
+- No software can guarantee protection against a compromised operating system or keylogger.
+
+This notice is product information, not legal advice. Review it with counsel before distribution.

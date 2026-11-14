@@ -1,0 +1,36 @@
+Bangla Likho V7.4.0 — Context & Morphology Upgrade
+===================================================
+
+Screenshot issues addressed:
+- "step" -> স্টেপ (and "steps" -> স্টেপস)
+- "liktesi" / "likhtesi" -> লিখতেছি
+- related colloquial spellings: লিখতেছে, লিখতেছেন, লিখতেছিলাম
+
+New engine capabilities:
+1. Context-aware candidate ranking:
+   - Composer maintains a short in-memory window of recently committed Bengali words.
+   - The context window is passed to the prediction engine.
+   - Context only reorders ambiguous candidates; exact curated spellings stay authoritative.
+2. Adaptive local learning:
+   - A deliberate candidate selection is treated as a correction signal.
+   - The selected word and its preceding context are stored locally in user data.
+   - No typing text is uploaded to an online service.
+3. Morphology coverage:
+   - Added common colloquial verb inflections and literary Bengali forms in the
+     local lexicon/alias layer. This release is a practical first step, not a
+     complete rule-based Bengali morphological analyzer.
+4. Performance:
+   - Context ranking uses in-memory lookups and bounded candidate caching.
+   - No network request is added to the keystroke prediction path.
+
+Validation:
+- Python syntax compilation passed.
+- Automated regression suite includes screenshot cases and context ranking.
+- Build scripts and installer metadata updated to V7.4.0.
+
+Known scope:
+- The context model learns from explicit candidate selections only.
+- Sentence-level grammatical rewriting and full সাধু/চলিত style conversion
+  are not claimed in this version.
+- Windows/Linux package builds and real desktop integration must be validated
+  on target operating systems.

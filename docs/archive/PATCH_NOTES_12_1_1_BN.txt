@@ -1,0 +1,17 @@
+Bangla Likho 12.1.1 — Startup Crash Fix
+
+সমস্যা:
+12.1.0 Windows build চালুর সময় NameError: name 'BrandSplash' is not defined দেখাত।
+কারণ main() থেকে BrandSplash instantiate করা হলেও class definition merge-এর সময় বাদ পড়ে গিয়েছিল।
+
+সমাধান:
+- পূর্ববর্তী tested splash implementation ফিরিয়ে আনা হয়েছে।
+- BrandSplash class-টি main() এর আগে QtWidgets availability guard-এর ভেতরে সংজ্ঞায়িত।
+- Startup splash animation ও dismiss fade-out রাখা হয়েছে।
+- Regression test যোগ করা হয়েছে, যাতে ভবিষ্যতে class definition বাদ পড়লে test fail করে।
+
+Validation:
+- Python syntax compilation passed.
+- Automated unit tests: 51 passed.
+- ZIP integrity checked.
+- Windows GUI runtime / PyInstaller build এই environment-এ চালানো হয়নি; Windows build আলাদাভাবে করতে হবে।

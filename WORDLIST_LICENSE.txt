@@ -1,0 +1,5 @@
+bn_words.txt is derived from the Bengali (bn) 2018 word-frequency list of
+"FrequencyWords" by Hermit Dave (https://github.com/hermitdave/FrequencyWords),
+built from OpenSubtitles data, licensed CC-BY-SA 4.0.
+Changes: filtered (Bangla-only tokens, minimum frequency, obvious noise removed).
+Please keep this notice if you redistribute the word list.

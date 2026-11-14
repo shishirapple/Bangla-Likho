@@ -1,0 +1,29 @@
+Bangla Likho build targets
+========================
+
+Windows 10/11 x64
+- Run build_windows.bat on Windows x64.
+- Output: dist/Bangla Likho/Bangla Likho.exe (onedir app folder).
+- Build installer with Inno Setup 6 and installer/Bangla Likho.iss.
+
+Linux x64 (X11)
+- Run ./build_linux.sh on the target Linux distribution.
+- Output: dist/Bangla Likho/Bangla Likho (onedir app folder).
+- On Debian/Ubuntu, run ./build_deb.sh to create a .deb installer.
+
+Do not cross-compile these packages from the other OS:
+PyInstaller bundles native platform-specific binaries. Build Windows on Windows
+and Linux on Linux. macOS is intentionally excluded.
+
+Performance profile
+- No background network polling when voice is off.
+- Voice audio capture uses a bounded queue and 20ms frames.
+- Audio health monitor wakes once per second only while voice is enabled.
+- The global keyboard listener remains event-driven.
+- Suggestion popup updates only while composing a word.
+
+V6 changes:
+- F10 toggles Bangla/English by default; F9 toggles Voice.
+- Both shortcuts are configurable in Settings.
+- Bengali digits and danda are applied while Bangla mode is enabled.
+- Floating panel can be hidden/restored from the system tray.

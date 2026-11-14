@@ -1,0 +1,45 @@
+Bangla Likho 11.0.0 — Windows Production Release Gate
+=====================================================
+
+Included in this source package
+- Native Qt desktop dashboard with Overview, Typing & Language, Voice Input,
+  and Appearance pages.
+- Existing floating suggestion popup, global hotkeys, system tray, voice engine,
+  context prediction engine, and local adaptive learning.
+- PowerShell Windows x64 build script (no BAT launcher).
+- PyInstaller onedir executable packaging configuration.
+- Inno Setup 6 user-scope installer configuration.
+- Embedded executable version metadata and application icon.
+- Privacy notice for local prediction and cloud voice recognition.
+- 41 automated unit tests pass in the current Linux development environment.
+- Current offline benchmark: 46/46 known samples; mean candidate latency
+  measured at 0.023 ms on this environment. This is a small fixed benchmark,
+  not a real-world typing performance guarantee.
+
+Not certified / must be completed on Windows before public distribution
+1. Build on clean Windows 10/11 x64 using Python 3.11 x64.
+2. Launch BanglaLikho.exe from the generated onedir folder.
+3. Verify dashboard startup, fade animation, close-to-hide, tray open/close,
+   mode toggles, voice startup/stop, and settings persistence.
+4. Test global keyboard hooks in Notepad, Word, Chrome, Edge, VS Code,
+   elevated apps, remote desktop and multi-monitor setups.
+5. Verify microphone enumeration, permissions, USB/Bluetooth headset changes,
+   network loss/recovery and extended dictation.
+6. Test Windows scaling at 100%, 125%, 150% and 200%.
+7. Test installer upgrade, uninstall, startup shortcut, desktop shortcut and
+   user-profile data preservation.
+8. Review third-party dependency licenses and the bundled Bengali word-list
+   license before commercial/public release.
+9. Review PRIVACY_NOTICE.txt with counsel; publish a public privacy policy.
+10. Sign EXE and installer with a trusted code-signing certificate; scan with
+    Microsoft Defender and SmartScreen reputation checks.
+
+Build commands
+- PowerShell: .\build_windows.ps1
+- Portable executable: dist\BanglaLikho\BanglaLikho.exe
+- Installer: compile installer\BanglaLikho.iss using Inno Setup 6.
+
+Important
+The current build host is Linux and does not have PySide6, Windows, PyInstaller,
+or Inno Setup. This package therefore does NOT contain a compiled Windows EXE
+or Setup EXE. A Windows-native build and the checks above are still required.

@@ -1,0 +1,36 @@
+V5 release acceptance gate
+===========================
+
+Before public release, verify on physical devices:
+
+Windows 10/11 x64
+[ ] Fresh install and uninstall
+[ ] Bangla typing in Notepad, Office, browsers, messaging apps
+[ ] No duplicate keyboard hooks after restart
+[ ] Voice on/off repeatedly; microphone disconnect/reconnect
+[ ] Sleep/resume and default input device change
+[ ] Tray menu, floating badge drag and saved position
+[ ] Multi-monitor and 100/125/150/200% DPI
+[ ] No typing into password fields (document known limitations)
+
+Linux x64
+[ ] X11 session; Wayland must show a clear unsupported notice
+[ ] xclip or xsel installed and clipboard restored after paste
+[ ] X11 key grabs release correctly on crash/quit
+[ ] Microphone selection and recovery
+[ ] .deb install/uninstall and desktop launcher
+[ ] KDE Plasma and GNOME X11 smoke tests
+
+Performance
+[ ] Idle CPU near-zero with voice off
+[ ] No background network traffic with voice off
+[ ] 30-minute continuous typing test
+[ ] 30-minute voice test with pauses
+[ ] Memory stable during repeated voice sessions
+
+Release engineering
+[ ] Build separately on Windows and Linux
+[ ] VirusTotal / Microsoft Defender false-positive review
+[ ] Code signing certificate (Windows)
+[ ] Privacy policy and microphone/network disclosure
+[ ] Third-party licenses bundled

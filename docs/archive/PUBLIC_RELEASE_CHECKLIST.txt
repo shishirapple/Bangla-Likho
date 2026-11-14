@@ -1,0 +1,40 @@
+BanglaType V4 - Public Release Checklist
+=========================================
+
+Completed in this source package
+- Exact, curated spelling mappings for screenshot cases: test, perform,
+  performance, attobisshar, babohar.
+- Exact curated/user-learned mappings suppress low-confidence malformed
+  alternatives instead of showing them below the correct spelling.
+- Suggestion popup placement: caret, four screen corners, mouse cursor,
+  bottom-center; follows the caret on each update.
+- Settings dialog includes a miniature display preview.
+- Tray icon click opens Settings; right-click exposes Settings, Typing Guide,
+  and Quit.
+- Conservative microphone level normalization before ASR.
+- PyInstaller onedir build script and Inno Setup installer recipe.
+- Automated regression tests.
+
+Required before publishing a public Windows installer
+1. Build on a clean Windows 10/11 x64 machine using Python 3.11 x64.
+2. Test Bangla input in Notepad, Word, Chrome, Edge, VS Code, and common chat apps.
+3. Test UAC/admin boundaries, elevated apps, multi-monitor scaling, 100/125/150/200% DPI.
+4. Test microphone devices, quiet speech, background noise, long dictation,
+   internet loss, reconnect, stop/start, and duplicate text prevention.
+5. Test install, upgrade, uninstall, optional startup, tray behavior, and
+   clean-machine launch without Python installed.
+6. Review bundled word-list licensing and all third-party dependency licenses.
+7. Add a privacy policy and clear microphone/network disclosure for Google ASR.
+8. Sign the installer and executable with a trusted Windows code-signing
+   certificate before broad distribution.
+9. Run Microsoft Defender and reputable antivirus scans; investigate false positives.
+10. Collect opt-in crash reports only; never upload typed content or voice without
+    explicit consent.
+
+Not yet certified
+- This Linux build environment cannot compile or execute a native Windows .exe.
+- No physical Windows, microphone, DPI, code-signing, or antivirus certification
+  was performed in this session.
+- Google SpeechRecognition is phrase-based, not true partial streaming ASR.
+
+V6 default shortcuts: F10 = Bangla/English, F9 = Voice. Both can be changed in Settings.

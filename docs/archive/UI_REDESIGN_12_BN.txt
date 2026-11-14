@@ -1,0 +1,32 @@
+BANGLA LIKHO 12.1.1 — STITCH DESIGN SYSTEM INTEGRATION
+=====================================================
+
+Source of truth
+- The supplied Stitch HTML screens and DESIGN.md are included in design_reference/.
+- Native PySide6 widgets implement the same layout, typography hierarchy, surfaces,
+  spacing, emerald/teal accent, navigation and responsive content behavior.
+- Pages: Home, About, Typing Guide, Preferences (Typing, Voice, Suggestion Panel,
+  Shortcuts, Appearance categories).
+- Floating companion and suggestion popup remain native, theme-aware windows.
+
+Main application
+- Workspace sidebar with Home, About and Typing Guide; Preferences is one utility
+  destination only. Duplicate Preferences buttons were removed.
+- Home includes a concise welcome/typing area, three consistent quick-control rows,
+  and a compact typing/shortcut status section.
+- About and Typing Guide are dedicated scrollable pages.
+- Light, Dark and System themes persist locally and are shared with the floating panel
+  and suggestion popup.
+- Content layouts use scroll areas and adaptive width rather than fixed preview canvases.
+
+Preferences
+- Category-based navigation with a single content surface.
+- Typing, Voice, Suggestion Panel, Shortcuts and Appearance are separated.
+- Removed oversized fixed-size live preview and duplicate appearance controls.
+- Existing settings keys and save/getter contract are preserved.
+
+QA boundary
+- Python syntax validation and automated non-GUI tests are run in this environment.
+- Native Windows rendering, high-DPI behavior, focus/keyboard navigation and installer
+  behavior still require a Windows GUI runtime. This is not represented as completed
+  by source-level tests.

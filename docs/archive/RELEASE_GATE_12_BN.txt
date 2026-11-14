@@ -1,0 +1,31 @@
+BANGLA LIKHO 12.0.1 — RELEASE GATE
+
+Completed in this source package
+[PASS] Source ZIP integrity checked before extraction.
+[PASS] Python syntax compilation.
+[PASS] 44 automated tests (typing/core/engine/voice/storage/diagnostics).
+[PASS] Engine self-check.
+[PASS] 46/46 curated benchmark samples; benchmark mean ~0.020 ms in this Linux container.
+[PASS] Theme selection and config persistence implemented.
+[PASS] First-use consent gate for Google voice recognition.
+[PASS] Local rotating diagnostics with exception messages/source lines excluded.
+[PASS] Windows DPAPI protection implemented for local JSON settings/learning data (native round-trip still requires Windows verification).
+[PASS] POSIX config folder/file owner-only permissions.
+
+Must be completed on the Windows release machine before public distribution
+[ ] Run build_windows.ps1 with Python 3.11 x64 and Inno Setup 6.
+[ ] Launch the built app and inspect Light, Dark and System themes at 100%, 125% and 150% DPI.
+[ ] Verify floating panel drag, position persistence, tray show/hide and candidate popup placement.
+[ ] Verify Bangla/English hotkey, voice hotkey, microphone start/stop and first-use Google consent.
+[ ] Verify Whisper local mode using a locally installed model and airplane-mode behavior.
+[ ] Verify DPAPI encrypt/decrypt round-trip and migration from pre-12 plaintext JSON files.
+[ ] Verify clean install, upgrade over prior version, uninstall, and user-data retention behavior.
+[ ] Scan the final installer with Microsoft Defender and an independent malware scanner.
+[ ] Generate SHA256SUMS.txt; publish the checksum through a trusted release channel.
+[ ] Sign the installer and binaries with the publisher's own code-signing certificate, if available.
+[ ] Review dependency licenses and vulnerability status; create a pinned lock file for the release.
+[ ] Arrange an independent security review before making strong security claims.
+
+No native Windows build, GUI runtime test, code-signing, malware scan or third-party security
+assessment has been performed by the Linux build environment. Do not label this package audited,
+fully encrypted, or signed until those gates are actually completed.
