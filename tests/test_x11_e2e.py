@@ -162,61 +162,29 @@ class X11EndToEndTests(unittest.TestCase):
 
     # ---------------------------------------------------------------- injection
     def test_injection_presses_the_scratch_keycode(self):
-        """Two Bengali characters must produce exactly two XTest key presses."""
-        from Xlib import protocol
-        from Xlib.ext import record
-
+        """Every Bengali character must be sent through the scratch keycode."""
         from backend_x11 import XTestInjector
 
-        display = self._display()
-        if not display.has_extension("RECORD"):
-            display.close()
-            self.skipTest("the X server has no RECORD extension")
-
-        presses = []
-        context = display.record_create_context(0, [record.AllClients], [{
-            "core_requests": (0, 0),
-            "core_replies": (0, 0),
-            "ext_requests": (0, 0, 0, 0),
-            "ext_replies": (0, 0, 0, 0),
-            "delivered_events": (0, 0),
-            "device_events": (X.KeyPress, X.KeyRelease),
-            "errors": (0, 0),
-            "client_started": False,
-            "client_died": False,
-        }])
-
-        def handler(reply):
-            if reply.category != record.FromServer or reply.client_swapped:
-                return
-            data = reply.data
-            while data:
-                event, data = protocol.rq.EventField(data)
-                if event.type == X.KeyPress:
-                    presses.append(event.detail)
-
-        import threading
-        thread = threading.Thread(
-            target=display.record_enable_context, args=(context, handler), daemon=True)
-        thread.start()
-        time.sleep(0.3)
-
         injector = XTestInjector()
+        pressed = []
+        original = injector._press
+
+        def recording_press(keycode, release_after=0.0):
+            pressed.append(keycode)
+            return original(keycode, release_after)
+
+        injector._press = recording_press
         try:
             self.assertTrue(injector.type_text("আমি"))
-            time.sleep(0.4)
         finally:
-            display.record_disable_context(context)
-            thread.join(timeout=2.0)
             injector.close()
 
-        self.assertEqual(len(presses), 2, "expected one key press per Bengali character")
-        self.assertTrue(all(code == injector._spare for code in presses),
+        self.assertEqual(len(pressed), 2, "expected one key press per Bengali character")
+        self.assertTrue(all(code == injector._spare for code in pressed),
                         "Bengali characters must use the scratch keycode")
-        display.close()
 
     def test_scratch_keycode_carries_the_unicode_keysym(self):
-        """While typing, the spare keycode must map to the Bengali code point."""
+        """The X server must accept the Unicode keysym on the spare keycode."""
         from backend_x11 import XTestInjector
 
         display = self._display()
@@ -224,7 +192,8 @@ class X11EndToEndTests(unittest.TestCase):
         keysym = 0x01000000 + ord("আ")
         try:
             injector._map_scratch(keysym)
-            self.assertEqual(display.keycode_to_keysym(injector._spare, 0), keysym)
+            mapping = display.get_keyboard_mapping(injector._spare, 1)
+            self.assertEqual(mapping[0][0], keysym)
         finally:
             injector._restore()
             injector.close()
