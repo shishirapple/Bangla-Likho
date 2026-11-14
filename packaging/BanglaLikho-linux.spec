@@ -7,15 +7,18 @@ appimagetool is available, into an AppImage.
 """
 import os
 
+# The spec lives in packaging/, so resolve the project root explicitly. This
+# keeps the build working no matter which directory PyInstaller is started from.
 HERE = SPECPATH
+ROOT = os.path.dirname(HERE) if os.path.basename(HERE) == "packaging" else HERE
 
 datas = [
-    ("bn_words.txt", "."),
-    ("WORDLIST_LICENSE.txt", "."),
-    ("PRIVACY_NOTICE.txt", "."),
-    ("SECURITY_MODEL_BN.txt", "."),
-    ("README.txt", "."),
-    ("assets", "assets"),
+    (os.path.join(ROOT, "bn_words.txt"), "."),
+    (os.path.join(ROOT, "WORDLIST_LICENSE.txt"), "."),
+    (os.path.join(ROOT, "PRIVACY_NOTICE.txt"), "."),
+    (os.path.join(ROOT, "SECURITY_MODEL_BN.txt"), "."),
+    (os.path.join(ROOT, "README.txt"), "."),
+    (os.path.join(ROOT, "assets"), "assets"),
 ]
 
 hiddenimports = [
@@ -54,8 +57,8 @@ excludes = [
 block_cipher = None
 
 a = Analysis(
-    ["banglatype.py"],
-    pathex=[HERE],
+    [os.path.join(ROOT, "banglatype.py")],
+    pathex=[ROOT],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,

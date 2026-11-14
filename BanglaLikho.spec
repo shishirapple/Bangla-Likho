@@ -13,9 +13,10 @@ import os
 from PyInstaller.utils.hooks import collect_submodules
 
 HERE = SPECPATH  # spec directory (app/)
+ROOT = os.path.dirname(HERE) if os.path.basename(HERE) == "packaging" else HERE
 
 datas = [
-    ("bn_words.txt", "."),
+    (os.path.join(ROOT, "bn_words.txt"), "."),
     ("WORDLIST_LICENSE.txt", "."),
     ("PRIVACY_NOTICE.txt", "."),
     ("SECURITY_MODEL_BN.txt", "."),
