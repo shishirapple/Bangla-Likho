@@ -1,1 +1,1 @@
-﻿Bangla Likho V12.2.0 - Unified design system (Light/Dark/System), animated startup, new brand mark, lag-free transitions, lean bundle
+﻿Bangla Likho V12.2.1 - Linux/X11 typing fix (F9/F10 hotkeys, session diagnostics); design system (Light/Dark/System), animated startup, new brand mark, lag-free transitions, lean bundle

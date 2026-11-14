@@ -339,6 +339,12 @@ class X11Backend:
         }
         if key in special:
             return special[key], ""
+        # Function keys are how the global hotkeys are configured (F9/F10), and
+        # they are neither printable nor KeyCode instances.
+        for number in range(1, 25):
+            function_key = getattr(Key, "f%d" % number, None)
+            if function_key is not None and key == function_key:
+                return "f%d" % number, ""
         if isinstance(key, KeyCode):
             if key.char:
                 return "char", key.char

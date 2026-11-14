@@ -103,6 +103,15 @@ Use an **X11 session** instead: log out, click the gear icon on the login screen
 and choose *“X11”*, *“Xorg”* or *“GNOME on Xorg”* (the exact label depends on
 your desktop).
 
+| Distribution | How to pick the X11 session |
+|---|---|
+| Zorin OS 17 | Log out → click the gear ⚙ next to your name → **Zorin Desktop on Xorg** |
+| Ubuntu 22.04 / 24.04 | Gear ⚙ on the login screen → **Ubuntu on Xorg** |
+| Fedora Workstation | Gear ⚙ → **GNOME on Xorg** |
+| KDE Plasma | Switch to **Plasma (X11)** |
+
+After logging in, check `echo $XDG_SESSION_TYPE` — it must print `x11`.
+
 Some distributions let you install a dedicated X11 session:
 
 | Desktop | Package / hint |
@@ -158,9 +167,22 @@ completely.
 ## 7. Troubleshooting
 
 **“Global typing does not work”**
-: Check `echo $XDG_SESSION_TYPE`. If it prints `wayland`, switch to an X11
-  session. Also confirm the app is running (`ps aux | grep banglatype`) and that
-  `F10` actually toggles the Bangla badge on the floating card.
+: Run the built-in check first — it tests the X connection, XTEST, text
+  injection and key capture on your machine:
+
+  ```bash
+  bangla-likho --diagnose
+  ```
+
+  The report ends with the concrete cause. The usual answers:
+
+  - `session type : wayland` → switch to an X11/Xorg session (see above).
+  - `global key capture : no events received` → XRecord is restricted; check
+    that you are the session owner and that `xauth list` shows your display.
+  - `XTEST extension : missing` → unusual; try a stock Xorg session.
+  - Everything `OK` but keys still do nothing → confirm the app is running
+    (`ps aux | grep banglatype`) and that the Bangla badge on the floating card
+    is teal/active.
 
 **Qt fails to start: “could not load the Qt platform plugin xcb”**
 : Install the XCB libraries:

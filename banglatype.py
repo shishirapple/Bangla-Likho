@@ -103,6 +103,132 @@ def save_cfg(cfg: dict) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# Linux diagnostics (works without Qt, so it can run from a terminal)
+# --------------------------------------------------------------------------- #
+def _read_version() -> str:
+    try:
+        import re
+        source = open(os.path.join(HERE, "ui", "context.py"), encoding="utf-8").read()
+        return re.search(r'VERSION\s*=\s*"([^"]+)"', source).group(1)
+    except Exception:
+        return "unknown"
+
+
+def run_diagnostics() -> int:
+    """Print a short report explaining why global typing may not work."""
+    import threading
+
+    rows = []
+    failures = []
+
+    def add(label, value, ok=None):
+        rows.append((label, str(value), ok))
+        if ok is False:
+            failures.append(label)
+
+    add("version", _read_version())
+    add("platform", sys.platform)
+    add("python", sys.version.split()[0])
+    add("config folder", config_dir())
+
+    is_linux = sys.platform.startswith("linux")
+    wayland = False
+    display = None
+
+    if not is_linux:
+        add("keyboard layer", "Windows low-level hook (no X server needed)", True)
+    else:
+        session = os.environ.get("XDG_SESSION_TYPE", "").lower()
+        wayland = session == "wayland" or bool(os.environ.get("WAYLAND_DISPLAY"))
+        add("session type", session or ("wayland" if wayland else "unknown"),
+            None if not wayland else False)
+        add("DISPLAY", os.environ.get("DISPLAY") or "not set")
+        add("WAYLAND_DISPLAY", os.environ.get("WAYLAND_DISPLAY") or "not set")
+        add("desktop", os.environ.get("XDG_CURRENT_DESKTOP") or "unknown")
+
+        try:
+            from Xlib import X, display as xdisplay
+            from Xlib.ext import xtest
+            display = xdisplay.Display()
+            add("X connection", "ok", True)
+        except Exception as exc:
+            add("X connection", "failed (%s)" % exc, False)
+            display = None
+
+        if display is not None:
+            has_xtest = bool(display.has_extension("XTEST"))
+            add("XTEST extension", "available" if has_xtest else "missing", has_xtest)
+
+            try:
+                from backend_x11 import XTestInjector
+                injector = XTestInjector()
+                add("scratch keycode", injector._spare, True)
+                injector.close()
+            except Exception as exc:
+                add("Bengali text injection", "failed (%s)" % exc, False)
+
+            try:
+                from pynput import keyboard
+                seen = threading.Event()
+
+                def on_press(key):
+                    if key == keyboard.Key.shift:
+                        seen.set()
+
+                listener = keyboard.Listener(on_press=on_press)
+                listener.start()
+                time.sleep(0.6)
+                keycode = display.keysym_to_keycode(0xFFE1)  # Shift_L
+                xtest.fake_input(display, X.KeyPress, keycode)
+                xtest.fake_input(display, X.KeyRelease, keycode)
+                display.sync()
+                captured = seen.wait(2.0)
+                listener.stop()
+                add("global key capture", "ok" if captured else "no events received", captured)
+            except Exception as exc:
+                add("global key capture", "failed (%s)" % exc, False)
+
+            display.close()
+
+        cfg = load_cfg()
+        add("hotkeys", "%s (Bangla/English) · %s (voice)" %
+            (cfg.get("hotkey_toggle", "f10").upper(), cfg.get("hotkey_voice", "f9").upper()))
+
+    width = max(len(row[0]) for row in rows)
+    print("")
+    print("Bangla Likho %s — diagnostics" % _read_version())
+    print("-" * 58)
+    for label, value, ok in rows:
+        mark = "  " if ok is None else ("OK" if ok else "!!")
+        print("%s  %-*s : %s" % (mark, width, label, value))
+    print("-" * 58)
+
+    if not failures:
+        print("Everything needed for global typing is available.")
+        return 0
+
+    print("Problems found: %s" % ", ".join(failures))
+    print("")
+    if wayland:
+        print("This is a Wayland session. Wayland blocks global keyboard capture for")
+        print("ordinary applications, so typing into other apps cannot work here.")
+        print("")
+        print("Fix: log out, and at the login screen pick 'X11', 'Xorg' or")
+        print("'Zorin Desktop on Xorg' (the gear icon next to your name), then log in.")
+    elif "X connection" in failures:
+        print("No X server was reachable. Start the app inside a graphical session,")
+        print("or check that DISPLAY points at your session.")
+    elif "global key capture" in failures:
+        print("The X server did not deliver key events. On some systems XRecord is")
+        print("restricted; make sure you are not running as another user and that")
+        print("xauth has a valid cookie for this display.")
+    else:
+        print("Run the app from a terminal to see the full error:")
+        print("  %s %s --diagnose" % (sys.executable, os.path.join(HERE, "banglatype.py")))
+    return 1
+
+
+# --------------------------------------------------------------------------- #
 # Qt bootstrap
 # --------------------------------------------------------------------------- #
 QT_IMPORT_ERROR = None
@@ -315,6 +441,8 @@ if QtWidgets is not None:
 
     # ------------------------------------------------------------------- main
     def main() -> None:
+        if "--diagnose" in sys.argv:
+            raise SystemExit(run_diagnostics())
         if "--self-check" in sys.argv:
             eng = Engine()
             emit("Bangla Likho self-check: OK")
@@ -608,6 +736,14 @@ if QtWidgets is not None:
         typing_ready = backend.start()
         if typing_ready is False:
             bridge.status.emit("টাইপিং লেয়ার চালু হয়নি — X11 সেশন দরকার")
+            diagnostic_event("typing_layer_failed")
+        else:
+            diagnostic_event("typing_layer_ready")
+        if wayland_session or typing_ready is False:
+            # A toast is too easy to miss while the splash is still on screen;
+            # this problem makes the whole app useless, so say it plainly.
+            QtCore.QTimer.singleShot(900, lambda: _session_problem_dialog(
+                window, cfg, wayland_session))
 
         elapsed = time.perf_counter() - START_TS
         diagnostic_timing("startup_complete", elapsed * 1000.0)
@@ -619,6 +755,42 @@ if QtWidgets is not None:
     def _make_context(cfg, composer, voice, badge, popup):
         from ui.context import Context
         return Context(cfg, composer=composer, voice=voice, badge=badge, popup=popup)
+
+    def _session_problem_dialog(parent, cfg, wayland: bool) -> None:
+        """Explain, once, why global typing is unavailable."""
+        if cfg.get("suppress_session_notice"):
+            return
+        from ui.dialogs import BaseDialog
+
+        if wayland:
+            title = "Wayland সেশন — টাইপিং কাজ করবে না"
+            message = (
+                "আপনি Wayland সেশনে আছেন। Wayland নিরাপত্তার কারণে কোনো অ্যাপকে "
+                "সিস্টেমজুড়ে কী পড়তে বা টাইপ করতে দেয় না, তাই বাংলা টাইপিং এখানে "
+                "চালু করা সম্ভব নয়।\n\n"
+                "সমাধান: লগ আউট করুন, লগইন স্ক্রিনে আপনার নামের পাশের ⚙ (গিয়ার) আইকনে "
+                "ক্লিক করে “Zorin Desktop on Xorg” বা “X11” নির্বাচন করে আবার লগইন করুন।\n\n"
+                "তারপরও সমস্যা হলে টার্মিনালে চালান:  bangla-likho --diagnose"
+            )
+        else:
+            title = "টাইপিং লেয়ার চালু হয়নি"
+            message = (
+                "গ্লোবাল কী শোনার লেয়ারটি শুরু করা যায়নি।\n\n"
+                "টার্মিনালে এই কমান্ডটি চালিয়ে রিপোর্টটি দেখুন:\n"
+                "  bangla-likho --diagnose\n\n"
+                "প্রয়োজন: X11 সেশন, python-xlib এবং pynput।"
+            )
+
+        dialog = BaseDialog(parent, title, message, icon="triangle-alert")
+
+        def suppress():
+            cfg["suppress_session_notice"] = True
+            save_cfg(cfg)
+            dialog.accept()
+
+        dialog.add_button("আর দেখাবেন না", "ghost", suppress)
+        dialog.add_button("ঠিক আছে", "primary", dialog.accept, icon="check")
+        dialog.exec()
 
     def _persist(cfg, backend, popup, badge):
         """Persist settings and push them into the live widgets."""

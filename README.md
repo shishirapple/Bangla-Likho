@@ -75,8 +75,15 @@ chmod +x BanglaLikho-*.AppImage
 
 **A note about Wayland:** global keyboard capture is blocked by Wayland
 compositors. Bangla Likho needs an **X11 session** — at the login screen choose
-“X11”/“Xorg” instead of “Wayland”. Everything else (the interface, settings,
-speech) works either way.
+“X11”/“Xorg” (on Zorin: *“Zorin Desktop on Xorg”*) instead of “Wayland”.
+Everything else (the interface, settings, speech) works either way.
+
+If typing or the F9/F10 hotkeys do nothing, run the built-in check and read the
+report — it tells you exactly which piece is missing:
+
+```bash
+bangla-likho --diagnose
+```
 
 Detailed instructions and troubleshooting: [docs/LINUX.md](docs/LINUX.md).
 

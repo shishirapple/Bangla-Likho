@@ -89,6 +89,7 @@ def timing(name: str, milliseconds: float) -> None:
 def event(name: str) -> None:
     """Log only fixed, non-content event labels from the application."""
     allowed = {"application_started", "application_stopped", "voice_started", "voice_stopped",
-               "theme_changed", "settings_saved", "startup_recovery"}
+               "theme_changed", "settings_saved", "startup_recovery",
+               "typing_layer_ready", "typing_layer_failed"}
     if name in allowed:
         _LOGGER.info("event=%s", name)
