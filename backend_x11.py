@@ -216,6 +216,7 @@ class X11Backend:
         self.mouse = None
         self.injector: XTestInjector | None = None
         self._pending: list[str] = []
+        self._inject_lock = threading.Lock()
         self._injecting = False
         self._ignore_until = 0.0
         self._output = X11Output(self)
@@ -286,16 +287,22 @@ class X11Backend:
         self._inject(run)
 
     def _inject(self, action) -> None:
-        """Run an injection while keeping our own listener quiet."""
-        if self._injecting:
-            return
-        self._injecting = True
-        try:
-            action()
-        finally:
-            # X events travel asynchronously; ignore echoes for a short window
-            self._ignore_until = time.time() + 0.25
-            self._injecting = False
+        """Run an injection while keeping our own listener quiet.
+
+        python-xlib displays are not thread-safe and the composer can commit
+        from the listener thread while the UI triggers a key press, so every
+        injection is serialised.
+        """
+        with self._inject_lock:
+            if self._injecting:
+                return
+            self._injecting = True
+            try:
+                action()
+            finally:
+                # X events travel asynchronously; ignore echoes for a moment
+                self._ignore_until = time.time() + 0.25
+                self._injecting = False
 
     # ---------------------------------------------------------------- hotkeys
     def set_hotkeys(self, cfg) -> None:
