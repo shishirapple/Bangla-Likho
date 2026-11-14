@@ -131,7 +131,11 @@ class SettingsPage(Page):
                                            self.context.toast("লগ ফোল্ডার খোলা হয়েছে")))
         copy = widgets.Button("Copy diagnostics", variant="secondary", icon="copy", compact=True)
         copy.clicked.connect(self._copy_diagnostics)
+        check = widgets.Button("Run typing check", variant="secondary", icon="activity",
+                               compact=True)
+        check.clicked.connect(self._run_typing_check)
         buttons.addWidget(open_logs)
+        buttons.addWidget(check)
         buttons.addWidget(copy)
         buttons.addStretch(1)
         card.body().addLayout(buttons)
@@ -312,6 +316,24 @@ class SettingsPage(Page):
         ok = self.context.on_reset_settings()
         self.context.toast("সব সেটিং ডিফল্টে ফেরানো হয়েছে" if ok else "রিসেট করা যায়নি",
                            icon="check" if ok else "triangle-alert")
+
+    def _run_typing_check(self) -> None:
+        """Run the CLI diagnostics and show the report in a dialog."""
+        import subprocess
+        import sys
+
+        base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if getattr(sys, "frozen", False):
+            command = [sys.executable, "--diagnose"]
+        else:
+            command = [sys.executable, os.path.join(base, "banglatype.py"), "--diagnose"]
+        try:
+            finished = subprocess.run(command, capture_output=True, text=True, timeout=40)
+            output = (finished.stdout or "") + (finished.stderr or "")
+        except Exception as exc:
+            output = "Could not run the typing check: %r" % (exc,)
+        from .dialogs import report
+        report(self, "Typing check", output.strip() or "No output.")
 
     def _copy_diagnostics(self) -> None:
         try:

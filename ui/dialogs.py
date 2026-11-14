@@ -92,6 +92,21 @@ def inform(parent, title: str, message: str, ok_text: str = "Got it",
     dialog.exec()
 
 
+def report(parent, title: str, text: str, ok_text: str = "Close") -> None:
+    """Show a read-only monospace report (diagnostics output)."""
+    dialog = BaseDialog(parent, title, "", icon="activity", width=620)
+    box = QtWidgets.QPlainTextEdit(text)
+    box.setReadOnly(True)
+    box.setMinimumHeight(280)
+    box.setFont(theme.font(10, 400, mono=True))
+    box.setStyleSheet(
+        "QPlainTextEdit{background:%s;color:%s;border:1px solid %s;border-radius:8px;"
+        "padding:8px;}" % (dialog.p["sunken"], dialog.p["text"], dialog.p["border"]))
+    dialog.card.body().addWidget(box)
+    dialog.add_button(ok_text, "primary", dialog.accept, icon="check")
+    dialog.exec()
+
+
 def google_voice_consent(parent) -> bool:
     return confirm(
         parent, "Google voice recognition",
