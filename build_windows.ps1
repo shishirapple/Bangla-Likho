@@ -31,13 +31,27 @@ Write-Host "Bangla Likho $Version - Windows x64 build" -ForegroundColor Cyan
 Write-Host ("-" * 62)
 
 # ---------------------------------------------------------------- toolchain
-if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
-    throw "The Python launcher (py.exe) is required. Install Python 3.11 x64 first."
+function New-BuildEnvironment {
+    param([string]$Target)
+    # Prefer the Python already on PATH (GitHub Actions, winget, Store), and
+    # fall back to the py launcher when only that is configured.
+    if (Get-Command python -ErrorAction SilentlyContinue) {
+        & python -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 9) else 1)" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            & python -m venv $Target
+            if ($LASTEXITCODE -eq 0) { return }
+        }
+    }
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        & py -3.11 -m venv $Target
+        if ($LASTEXITCODE -eq 0) { return }
+    }
+    throw "Python 3.9+ x64 is required. Install it from python.org or the Microsoft Store."
 }
+
 if (-not (Test-Path ".venv\Scripts\python.exe")) {
-    Write-Host "Creating Python 3.11 virtual environment ..." -ForegroundColor Yellow
-    & py -3.11 -m venv .venv
-    if ($LASTEXITCODE -ne 0) { throw "Could not create the virtual environment." }
+    Write-Host "Creating the build environment ..." -ForegroundColor Yellow
+    New-BuildEnvironment -Target ".venv"
 }
 $python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
 & $python -c "import sys; print('Python', sys.version.split()[0])"
