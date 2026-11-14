@@ -18,6 +18,18 @@ if ROOT not in sys.path:
 from backend_x11 import X11Backend, session_is_wayland  # noqa: E402
 
 
+def _pynput_available() -> bool:
+    """pynput's X11 backend needs a display; CI runs these under xvfb."""
+    try:
+        from pynput.keyboard import Key, KeyCode  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+HAS_PYNPUT = _pynput_available()
+
+
 class FakeInjector:
     def __init__(self):
         self.backspaces = []
@@ -103,6 +115,7 @@ class X11BackendTests(unittest.TestCase):
         backend.mods = {"ctrl", "shift"}
         self.assertEqual(backend._hotkey("b", "b"), "toggle")
 
+    @unittest.skipUnless(HAS_PYNPUT, "pynput needs an X display")
     def test_key_split_for_letters_and_specials(self):
         from pynput.keyboard import Key, KeyCode
 
@@ -111,6 +124,7 @@ class X11BackendTests(unittest.TestCase):
         self.assertEqual(X11Backend._split_key(Key.backspace), ("backspace", ""))
         self.assertEqual(X11Backend._split_key(Key.enter), ("enter", ""))
 
+    @unittest.skipUnless(HAS_PYNPUT, "pynput needs an X display")
     def test_modifier_tracking(self):
         from pynput.keyboard import Key
 

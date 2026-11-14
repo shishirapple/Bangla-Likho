@@ -47,7 +47,12 @@ PY=".build-venv/bin/python"
 "$PY" -m pip install -r requirements-linux.txt "pyinstaller==6.11.1" --quiet
 
 say "Running the test suite"
-"$PY" -m unittest discover -s tests
+# pynput's X11 backend needs a display; xvfb lets those tests run on CI.
+if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1; then
+    xvfb-run -a "$PY" -m unittest discover -s tests
+else
+    "$PY" -m unittest discover -s tests
+fi
 
 say "Running PyInstaller"
 rm -rf build dist
