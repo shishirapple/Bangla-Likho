@@ -138,7 +138,16 @@ else
         warn "  Arch          : sudo pacman -S portaudio"
     fi
 fi
-"${VENV_PY}" -m pip install -r "$REQ" --quiet
+# pynput pulls the optional evdev backend on Linux; some distributions have no
+# prebuilt wheel for their Python and no kernel headers to compile it. The X11
+# backend does not need evdev, so retry without it instead of failing.
+if ! "${VENV_PY}" -m pip install -r "$REQ" --quiet; then
+    warn "Some packages could not be installed; retrying without the evdev backend"
+    grep -v -E '^pynput' "$REQ" > "${DATA_DIR}/requirements-no-pynput.txt"
+    "${VENV_PY}" -m pip install -r "${DATA_DIR}/requirements-no-pynput.txt" --quiet
+    "${VENV_PY}" -m pip install "six" "python-xlib>=0.33" --quiet
+    "${VENV_PY}" -m pip install --no-deps "pynput>=1.7,<2" --quiet
+fi
 
 "${VENV_PY}" -c 'import PySide6, sys; print("  Qt", PySide6.__version__, "on Python", sys.version.split()[0])'
 ( cd "${DATA_DIR}/app" && "${VENV_PY}" -c 'from engine import Engine; print("  self-check:", " | ".join(Engine().candidates("ami", 3)))' ) \

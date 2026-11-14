@@ -61,7 +61,13 @@ python3 -m venv .ci-venv
 # shellcheck disable=SC1091
 . .ci-venv/bin/activate
 python -m pip install --upgrade pip wheel --quiet
-python -m pip install -r requirements-linux.txt --quiet
+if ! python -m pip install -r requirements-linux.txt --quiet; then
+    echo "==> Falling back to pynput without the optional evdev backend"
+    grep -v -E '^pynput' requirements-linux.txt > /tmp/bl-req.txt
+    python -m pip install -r /tmp/bl-req.txt --quiet
+    python -m pip install six "python-xlib>=0.33" --quiet
+    python -m pip install --no-deps "pynput>=1.7,<2" --quiet
+fi
 
 python - <<'PY'
 import PySide6, sys

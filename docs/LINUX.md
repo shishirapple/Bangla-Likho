@@ -189,6 +189,17 @@ completely.
   `sudo apt install libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0
   libxkbcommon-x11-0 libegl1`.
 
+**The installer stops while installing `pynput` / `evdev`**
+: Newer distributions (Fedora, Arch) sometimes have no prebuilt `evdev` wheel
+  for their Python version. `install.sh` notices this and reinstalls pynput
+  without evdev — the X11 backend does not need it. If you installed with pip
+  yourself, use:
+
+  ```bash
+  pip install six python-xlib
+  pip install --no-deps pynput
+  ```
+
 **No tray icon (GNOME)**
 : GNOME hides legacy tray icons. Install the *AppIndicator* extension, or use
   the floating companion card — it is the app's primary control surface and does
