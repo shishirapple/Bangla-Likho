@@ -1,0 +1,75 @@
+name: Distro matrix
+
+# Proves the Linux build and the keyboard layer are not tied to one
+# distribution: the same suite runs inside Ubuntu, Debian, Fedora and Arch
+# containers, with the real X11 backend driven by XTest inside Xvfb.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-distros:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ubuntu:22.04
+            name: Ubuntu 22.04
+          - image: ubuntu:24.04
+            name: Ubuntu 24.04
+          - image: debian:12
+            name: Debian 12
+          - image: fedora:40
+            name: Fedora 40
+          - image: archlinux:latest
+            name: Arch Linux
+
+    steps:
+      # actions/checkout itself needs git inside the container
+      - name: Bootstrap git
+        shell: bash
+        run: |
+          if command -v apt-get >/dev/null; then
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq && apt-get install -y -qq git ca-certificates
+          elif command -v dnf >/dev/null; then
+            dnf install -y -q git ca-certificates
+          elif command -v pacman >/dev/null; then
+            pacman -Sy --noconfirm --needed git ca-certificates
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Install Qt, Xvfb and Python
+        run: bash .github/scripts/ci-setup.sh
+
+      - name: Unit + X11 end-to-end tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          . .ci-venv/bin/activate
+          xvfb-run -a python -m unittest discover -s tests -v
+
+      - name: Universal installer smoke test
+        shell: bash
+        run: |
+          export HOME=/tmp/bl-home
+          mkdir -p "$HOME"
+          bash install.sh --no-voice
+          test -x "$HOME/.local/bin/bangla-likho" || { echo "launcher missing"; exit 1; }
+          "$HOME/.local/share/bangla-likho/venv/bin/python" - <<'PY'
+          import sys
+          sys.path.insert(0, "/tmp/bl-home/.local/share/bangla-likho/app")
+          from engine import Engine
+          print("engine suggestion:", Engine().candidates("kemon", 3))
+          PY
+          echo "installer OK on $(. /etc/os-release && echo "$PRETTY_NAME")"
