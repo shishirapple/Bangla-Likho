@@ -144,6 +144,9 @@ class XTestInjector:
                     # keycode for the duration of one keystroke.
                     self._map_scratch(keysym)
                     self._press(self._spare)
+                    # Toolkits refresh their keymap asynchronously; a short
+                    # settle keeps fast typing from dropping characters.
+                    time.sleep(0.006)
                 return True
             except Exception:
                 traceback.print_exc()

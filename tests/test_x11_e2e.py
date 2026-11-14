@@ -137,8 +137,10 @@ class X11EndToEndTests(unittest.TestCase):
         self.assertTrue(self._wait_for(lambda: self.composer.buf == "test", 3.0))
         self._press_function_key(XK.XK_Escape)
         self.assertTrue(self._wait_for(lambda: not self.composer.buf, 3.0))
-        # "keep English" must not retype the same characters
-        self.assertEqual(self.commits, [])
+        # The composer reports the kept English text once, but the backend must
+        # recognise it as "already on screen" and never create an injector.
+        self.assertEqual(self.commits, ["test"])
+        self.assertIsNone(self.backend.injector, "Esc must not retype the text")
 
     # ----------------------------------------------------------------- hotkeys
     def test_f10_toggles_mode(self):
@@ -159,42 +161,74 @@ class X11EndToEndTests(unittest.TestCase):
                         "F9 did not request voice input")
 
     # ---------------------------------------------------------------- injection
-    def test_injection_types_bengali_into_a_window(self):
-        """XTest must deliver the Bengali characters to the focused window."""
+    def test_injection_presses_the_scratch_keycode(self):
+        """Two Bengali characters must produce exactly two XTest key presses."""
+        from Xlib import protocol
+        from Xlib.ext import record
+
         from backend_x11 import XTestInjector
 
         display = self._display()
-        root = display.screen().root
-        window = root.create_window(20, 20, 240, 90, 0, X.CopyFromParent,
-                                    X.InputOutput, X.CopyFromParent,
-                                    event_mask=X.KeyPressMask)
-        window.set_input_focus(X.RevertToParent, X.CurrentTime)
-        window.map()
-        display.sync()
+        if not display.has_extension("RECORD"):
+            display.close()
+            self.skipTest("the X server has no RECORD extension")
+
+        presses = []
+        context = display.record_create_context(0, [record.AllClients], [{
+            "core_requests": (0, 0),
+            "core_replies": (0, 0),
+            "ext_requests": (0, 0, 0, 0),
+            "ext_replies": (0, 0, 0, 0),
+            "delivered_events": (0, 0),
+            "device_events": (X.KeyPress, X.KeyRelease),
+            "errors": (0, 0),
+            "client_started": False,
+            "client_died": False,
+        }])
+
+        def handler(reply):
+            if reply.category != record.FromServer or reply.client_swapped:
+                return
+            data = reply.data
+            while data:
+                event, data = protocol.rq.EventField(data)
+                if event.type == X.KeyPress:
+                    presses.append(event.detail)
+
+        import threading
+        thread = threading.Thread(
+            target=display.record_enable_context, args=(context, handler), daemon=True)
+        thread.start()
         time.sleep(0.3)
 
         injector = XTestInjector()
-        injector._restore = lambda: None  # keep the mapping readable for inspection
         try:
             self.assertTrue(injector.type_text("আমি"))
             time.sleep(0.4)
-            keysyms = []
-            while display.pending_events():
-                event = display.next_event()
-                if event.type == X.KeyPress:
-                    keysym = display.keycode_to_keysym(event.detail, 0)
-                    if keysym:
-                        keysyms.append(keysym)
         finally:
-            injector._restore = lambda: None
+            display.record_disable_context(context)
+            thread.join(timeout=2.0)
             injector.close()
-            window.destroy()
+
+        self.assertEqual(len(presses), 2, "expected one key press per Bengali character")
+        self.assertTrue(all(code == injector._spare for code in presses),
+                        "Bengali characters must use the scratch keycode")
+        display.close()
+
+    def test_scratch_keycode_carries_the_unicode_keysym(self):
+        """While typing, the spare keycode must map to the Bengali code point."""
+        from backend_x11 import XTestInjector
+
+        display = self._display()
+        injector = XTestInjector()
+        keysym = 0x01000000 + ord("আ")
+        try:
+            injector._map_scratch(keysym)
+            self.assertEqual(display.keycode_to_keysym(injector._spare, 0), keysym)
+        finally:
+            injector._restore()
+            injector.close()
             display.close()
-
-        text = "".join(chr(k - 0x01000000) for k in keysyms
-                       if 0x01000000 <= k <= 0x0110FFFF)
-        self.assertEqual(text, "আমি")
-
 
 if __name__ == "__main__":
     unittest.main()
