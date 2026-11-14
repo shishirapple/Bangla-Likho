@@ -179,7 +179,9 @@ class X11EndToEndTests(unittest.TestCase):
         finally:
             injector.close()
 
-        self.assertEqual(len(pressed), 2, "expected one key press per Bengali character")
+        # "আমি" is three code points (আ + ম + ি); each one is one keystroke.
+        self.assertEqual(len(pressed), len("আমি"),
+                         "expected one key press per Unicode code point")
         self.assertTrue(all(code == injector._spare for code in pressed),
                         "Bengali characters must use the scratch keycode")
 
