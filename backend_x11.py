@@ -97,6 +97,33 @@ class XTestInjector:
         self._mapped = False
 
     # ----------------------------------------------------------------- public
+    def _existing_keycode(self, keysym: int):
+        """Return (keycode, needs_shift) when the keymap already has this keysym.
+
+        Latin letters, digits and punctuation exist in every layout, so they can
+        be typed with their real keycodes. Only characters the keymap does not
+        have (Bengali) need the temporary scratch keycode.
+        """
+        keycode = self.display.keysym_to_keycode(keysym)
+        if not keycode:
+            return None, False
+        if self.display.keycode_to_keysym(keycode, 0) == keysym:
+            return keycode, False
+        if self.display.keycode_to_keysym(keycode, 1) == keysym:
+            return keycode, True
+        return None, False
+
+    def _tap_with_shift(self, keycode: int, shift: bool) -> None:
+        if not shift:
+            self._press(keycode)
+            return
+        from Xlib import XK
+        shift_code = self._keycode(XK.XK_Shift_L)
+        self._xtest.fake_input(self.display, self._X.KeyPress, shift_code)
+        self._press(keycode)
+        self._xtest.fake_input(self.display, self._X.KeyRelease, shift_code)
+        self.display.sync()
+
     def type_text(self, text: str) -> bool:
         if not text:
             return True
@@ -109,6 +136,12 @@ class XTestInjector:
                         self._press(self._keycode(XK.XK_Return))
                         continue
                     keysym = 0x01000000 + ord(char)
+                    keycode, shift = self._existing_keycode(keysym)
+                    if keycode is not None:
+                        self._tap_with_shift(keycode, shift)
+                        continue
+                    # Bengali (and other non-Latin) characters: remap the spare
+                    # keycode for the duration of one keystroke.
                     self._map_scratch(keysym)
                     self._press(self._spare)
                 return True

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Linux end-to-end test for the X11 typing layer.
+"""Linux end-to-end tests for the X11 typing layer.
 
-Runs a real pynput listener against a real X server (Xvfb in CI) and drives it
-with XTest events, exactly like a user's keyboard. This is the only test that
-proves global capture, hotkeys and the composer work together on Linux.
+These run against a real X server (Xvfb in CI) and drive it the way a physical
+keyboard would, so they prove the capture path, the hotkeys and the injector
+independently of any desktop environment.
 """
 import os
 import sys
@@ -87,47 +87,31 @@ class X11EndToEndTests(unittest.TestCase):
         time.sleep(0.2)
 
     # ------------------------------------------------------------------ helpers
-    def _display(self):
+    @staticmethod
+    def _display():
         return xdisplay.Display()
 
-    def _tap_keycode(self, keycode, display):
+    @staticmethod
+    def _tap(display, keycode):
         xtest.fake_input(display, X.KeyPress, keycode)
         xtest.fake_input(display, X.KeyRelease, keycode)
         display.sync()
 
-    def _type(self, text, delay=0.04):
-        """Send characters through XTest using a scratch keycode.
-
-        Real keymaps carry Latin keysyms (0x6b for "k"), not Unicode private
-        keysyms, and that is what pynput can translate back into ``char``.
-        """
-        display = self._display()
-        mapping = display.get_keyboard_mapping(8, 232)
-        spare = None
-        for offset, symbols in enumerate(mapping):
-            if not any(symbols):
-                spare = 8 + offset
-                break
-        self.assertIsNotNone(spare, "no spare keycode available")
-        named = {" ": XK.XK_space, "\n": XK.XK_Return, "\t": XK.XK_Tab}
-        for char in text:
-            keysym = named.get(char) or XK.string_to_keysym(char)
-            self.assertNotEqual(keysym, 0, "no keysym for %r" % char)
-            display.change_keyboard_mapping(spare, [[keysym] * 8])
-            display.sync()
-            time.sleep(0.01)
-            self._tap_keycode(spare, display)
-            time.sleep(delay)
-        display.change_keyboard_mapping(spare, [[0] * 8])
-        display.sync()
-        display.close()
-
-    def _press_function_key(self, keysym):
+    def _press_keysym(self, keysym, delay=0.05):
+        """Press a key that already exists in the keymap (like a real keyboard)."""
         display = self._display()
         keycode = display.keysym_to_keycode(keysym)
-        self.assertNotEqual(keycode, 0, "function key has no keycode")
-        self._tap_keycode(keycode, display)
+        self.assertNotEqual(keycode, 0, "no keycode for keysym 0x%x" % keysym)
+        self._tap(display, keycode)
         display.close()
+        time.sleep(delay)
+
+    def _press_function_key(self, keysym):
+        self._press_keysym(keysym, delay=0.0)
+
+    def _type_latin(self, text):
+        for char in text:
+            self._press_keysym(XK.XK_space if char == " " else XK.string_to_keysym(char))
 
     def _wait_for(self, predicate, timeout=3.0):
         deadline = time.time() + timeout
@@ -137,17 +121,26 @@ class X11EndToEndTests(unittest.TestCase):
             time.sleep(0.05)
         return False
 
-    # -------------------------------------------------------------------- tests
+    # -------------------------------------------------------- capture + commit
     def test_typing_produces_bengali(self):
         self.assertTrue(self.composer.enabled)
-        self._type("kemon")
-        time.sleep(0.4)
-        self.assertEqual(self.composer.buf, "kemon", "listener did not see the keys")
-        self._type(" ")
+        self._type_latin("kemon")
+        self.assertTrue(self._wait_for(lambda: self.composer.buf == "kemon", 3.0),
+                        "listener did not see the keys (buffer: %r)" % self.composer.buf)
+        self._type_latin(" ")
         self.assertTrue(self._wait_for(lambda: len(self.commits) >= 1, 4.0),
                         "space did not commit a suggestion")
         self.assertTrue(self.commits[0].startswith("কেমন"), self.commits)
 
+    def test_escape_keeps_english(self):
+        self._type_latin("test")
+        self.assertTrue(self._wait_for(lambda: self.composer.buf == "test", 3.0))
+        self._press_function_key(XK.XK_Escape)
+        self.assertTrue(self._wait_for(lambda: not self.composer.buf, 3.0))
+        # "keep English" must not retype the same characters
+        self.assertEqual(self.commits, [])
+
+    # ----------------------------------------------------------------- hotkeys
     def test_f10_toggles_mode(self):
         was = self.composer.enabled
         self._press_function_key(XK.XK_F10)
@@ -165,14 +158,42 @@ class X11EndToEndTests(unittest.TestCase):
         self.assertTrue(self._wait_for(lambda: bool(hits), 4.0),
                         "F9 did not request voice input")
 
-    def test_escape_keeps_english(self):
-        self._type("test")
+    # ---------------------------------------------------------------- injection
+    def test_injection_types_bengali_into_a_window(self):
+        """XTest must deliver the Bengali characters to the focused window."""
+        from backend_x11 import XTestInjector
+
+        display = self._display()
+        root = display.screen().root
+        window = root.create_window(20, 20, 240, 90, 0, X.CopyFromParent,
+                                    X.InputOutput, X.CopyFromParent,
+                                    event_mask=X.KeyPressMask)
+        window.set_input_focus(X.RevertToParent, X.CurrentTime)
+        window.map()
+        display.sync()
         time.sleep(0.3)
-        self.assertEqual(self.composer.buf, "test")
-        self._press_function_key(XK.XK_Escape)
-        self.assertTrue(self._wait_for(lambda: not self.composer.buf, 3.0))
-        # "keep English" must not retype the same characters
-        self.assertEqual(self.commits, [])
+
+        injector = XTestInjector()
+        injector._restore = lambda: None  # keep the mapping readable for inspection
+        try:
+            self.assertTrue(injector.type_text("আমি"))
+            time.sleep(0.4)
+            keysyms = []
+            while display.pending_events():
+                event = display.next_event()
+                if event.type == X.KeyPress:
+                    keysym = display.keycode_to_keysym(event.detail, 0)
+                    if keysym:
+                        keysyms.append(keysym)
+        finally:
+            injector._restore = lambda: None
+            injector.close()
+            window.destroy()
+            display.close()
+
+        text = "".join(chr(k - 0x01000000) for k in keysyms
+                       if 0x01000000 <= k <= 0x0110FFFF)
+        self.assertEqual(text, "আমি")
 
 
 if __name__ == "__main__":
