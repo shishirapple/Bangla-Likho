@@ -96,7 +96,11 @@ class X11EndToEndTests(unittest.TestCase):
         display.sync()
 
     def _type(self, text, delay=0.04):
-        """Send characters through XTest using a scratch keycode."""
+        """Send characters through XTest using a scratch keycode.
+
+        Real keymaps carry Latin keysyms (0x6b for "k"), not Unicode private
+        keysyms, and that is what pynput can translate back into ``char``.
+        """
         display = self._display()
         mapping = display.get_keyboard_mapping(8, 232)
         spare = None
@@ -105,8 +109,11 @@ class X11EndToEndTests(unittest.TestCase):
                 spare = 8 + offset
                 break
         self.assertIsNotNone(spare, "no spare keycode available")
+        named = {" ": XK.XK_space, "\n": XK.XK_Return, "\t": XK.XK_Tab}
         for char in text:
-            display.change_keyboard_mapping(spare, [[0x01000000 + ord(char)] * 8])
+            keysym = named.get(char) or XK.string_to_keysym(char)
+            self.assertNotEqual(keysym, 0, "no keysym for %r" % char)
+            display.change_keyboard_mapping(spare, [[keysym] * 8])
             display.sync()
             time.sleep(0.01)
             self._tap_keycode(spare, display)
