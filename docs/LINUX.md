@@ -166,6 +166,23 @@ completely.
 
 ## 7. Troubleshooting
 
+**The application closes a few seconds after starting**
+: Run it from a terminal so the failure is visible, then read the crash log:
+
+  ```bash
+  bangla-likho --safe-mode     # disables tray, global keys and the dictionary warm-up
+  cat "~/.config/Bangla Likho/logs/crash.log"
+  ```
+
+  The log records every startup stage (`stage=qt-ready`, `stage=window-shown`,
+  `stage=alive+3000ms` …) together with the memory footprint, so the last line
+  before the silence points at the failing component. If `--safe-mode` works but
+  the normal start does not, the failure is in the tray icon, the global
+  keyboard layer or the dictionary warm-up — send the log and we can fix it.
+
+  Very low-memory machines (under ~700 MB available) now skip the dictionary
+  warm-up automatically; the first suggestion may take a moment longer.
+
 **Bengali text does not appear, or only part of the English word is replaced**
 : Bangla Likho inserts text by pasting it (the most reliable method on X11).
   Check **Settings → Typing behaviour → Linux text insertion**:

@@ -105,8 +105,46 @@ def save_cfg(cfg: dict) -> None:
 # --------------------------------------------------------------------------- #
 # Crash logging — a windowed app has no console, so failures must reach a file
 # --------------------------------------------------------------------------- #
+CRASH_HANDLE = None
+SAFE_MODE = False
+
+
+def breadcrumb(stage: str) -> None:
+    """Append a startup stage to crash.log so a silent death is traceable."""
+    try:
+        if CRASH_HANDLE is not None:
+            CRASH_HANDLE.write("%s  stage=%s  rss=%dMB\n"
+                               % (time.strftime("%H:%M:%S"), stage, rss_mb()))
+            CRASH_HANDLE.flush()
+    except Exception:
+        pass
+
+
+def rss_mb() -> int:
+    try:
+        with open("/proc/self/status", "r", encoding="ascii", errors="ignore") as handle:
+            for line in handle:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) // 1024
+    except Exception:
+        pass
+    return 0
+
+
+def available_mb() -> int:
+    try:
+        with open("/proc/meminfo", "r", encoding="ascii", errors="ignore") as handle:
+            for line in handle:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) // 1024
+    except Exception:
+        pass
+    return 0
+
+
 def install_crash_logging():
     """Record unhandled exceptions and hard crashes (faulthandler) to a file."""
+    global CRASH_HANDLE
     import faulthandler
     import traceback
 
@@ -119,6 +157,15 @@ def install_crash_logging():
 
     try:
         faulthandler.enable(handle)
+    except Exception:
+        pass
+    CRASH_HANDLE = handle
+    try:
+        handle.write("=" * 70 + "\n")
+        handle.write("%s  launch  %s  %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"),
+                                                sys.platform,
+                                                os.environ.get("XDG_SESSION_TYPE", "?")))
+        handle.flush()
     except Exception:
         pass
 
@@ -491,6 +538,9 @@ if QtWidgets is not None:
     # ------------------------------------------------------------------- main
     def main() -> None:
         install_crash_logging()
+        global SAFE_MODE
+        SAFE_MODE = "--safe-mode" in sys.argv
+        breadcrumb("main")
         if "--diagnose" in sys.argv:
             raise SystemExit(run_diagnostics())
         if "--self-check" in sys.argv:
@@ -552,9 +602,12 @@ if QtWidgets is not None:
             _signal_running_instance(instance_name)
             return
 
+        breadcrumb("qt-ready")
         splash = BrandSplash(cfg)
-        splash.show()
-        app.processEvents()
+        breadcrumb("splash-built")
+        if not SAFE_MODE:
+            splash.show()
+            app.processEvents()
 
         instance_server = QtNetwork.QLocalServer()
         state = {"window": None, "badge": None, "pending": False}
@@ -764,6 +817,7 @@ if QtWidgets is not None:
 
         badge.show()
         window.show()
+        breadcrumb("window-shown")
         window.show_page("home")
         if wayland_session:
             window.toast("Wayland সেশন — গ্লোবাল টাইপিং কাজ করবে না; X11 সেশন ব্যবহার করুন",
@@ -779,13 +833,35 @@ if QtWidgets is not None:
         badge.raise_()
 
         # Index the dictionary off the UI thread once the window is painted.
-        QtCore.QTimer.singleShot(450, engine.warmup)
+        if not SAFE_MODE:
+            free = available_mb()
+            if free and free < 700:
+                breadcrumb("warmup-skipped-low-memory:%dMB" % free)
+            else:
+                def _warm():
+                    breadcrumb("warmup-start")
+                    try:
+                        engine.warmup()
+                    except Exception:
+                        import traceback as _tb
+                        breadcrumb("warmup-failed")
+                        try:
+                            CRASH_HANDLE.write(_tb.format_exc() + "\n")
+                            CRASH_HANDLE.flush()
+                        except Exception:
+                            pass
+                    breadcrumb("warmup-done")
+
+                QtCore.QTimer.singleShot(450, _warm)
+                breadcrumb("warmup-scheduled:%dMB-free" % free)
 
         # The microphone stack is imported on first use only: keeping NumPy and
         # the audio libraries out of the idle process saves ~25-30 MB of RAM,
         # which matters on a 2 GB machine.
 
-        typing_ready = backend.start()
+        breadcrumb("before-backend")
+        typing_ready = backend.start() if not SAFE_MODE else False
+        breadcrumb("after-backend:%s" % typing_ready)
         if typing_ready is False:
             bridge.status.emit("টাইপিং লেয়ার চালু হয়নি — X11 সেশন দরকার")
             diagnostic_event("typing_layer_failed")
@@ -800,6 +876,9 @@ if QtWidgets is not None:
         elapsed = time.perf_counter() - START_TS
         diagnostic_timing("startup_complete", elapsed * 1000.0)
         splash.set_ready()
+        breadcrumb("splash-ready")
+        for delay in (3000, 8000):
+            QtCore.QTimer.singleShot(delay, lambda d=delay: breadcrumb("alive+%dms" % d))
         emit("%s chalu. Bangla ON/OFF: %s | Voice: %s" % (APP, cfg["hotkey_toggle"], cfg["hotkey_voice"]))
         sys.exit(app.exec())
 

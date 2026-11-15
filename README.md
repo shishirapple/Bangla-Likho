@@ -78,6 +78,10 @@ compositors. Bangla Likho needs an **X11 session** — at the login screen choos
 “X11”/“Xorg” (on Zorin: *“Zorin Desktop on Xorg”*) instead of “Wayland”.
 Everything else (the interface, settings, speech) works either way.
 
+If the app closes a few seconds after launch, run `bangla-likho --safe-mode` and
+send us `~/.config/Bangla Likho/logs/crash.log` — it records every startup stage
+and the memory footprint.
+
 On Linux, text is inserted by pasting it (with a terminal-aware shortcut).
 If a particular application refuses it, switch **Settings → Typing behaviour →
 Linux text insertion** to *Type like a keyboard*.
