@@ -8,7 +8,7 @@ keyboard hook, the voice stack or the single-instance socket.
 from __future__ import annotations
 
 APP_NAME = "Bangla Likho"
-VERSION = "12.2.3"
+VERSION = "12.2.4"
 
 
 class Context:

@@ -206,6 +206,12 @@ class GoogleRec:
             return ""
         except self.sr.RequestError as exc:
             raise RuntimeError("Speech service/network error: %s" % exc) from exc
+        except (OSError, FileNotFoundError) as exc:
+            # SpeechRecognition re-encodes the audio with a bundled FLAC tool;
+            # if the installation lost it, every request fails this way.
+            raise RuntimeError(
+                "ভয়েস এনকোডার (FLAC) পাওয়া যায়নি — অ্যাপটি নতুন করে ইনস্টল করুন "
+                "(Linux-এ: sudo apt install flac) • %s" % str(exc)[:60]) from exc
 
 
 class WhisperRec:

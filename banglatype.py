@@ -201,11 +201,31 @@ def install_crash_logging():
 # --------------------------------------------------------------------------- #
 def _read_version() -> str:
     try:
-        import re
-        source = open(os.path.join(HERE, "ui", "context.py"), encoding="utf-8").read()
-        return re.search(r'VERSION\s*=\s*"([^"]+)"', source).group(1)
+        from ui.context import VERSION as ui_version
+        return str(ui_version)
     except Exception:
-        return "unknown"
+        pass
+    import re
+    roots = [HERE]
+    bundle = getattr(sys, "_MEIPASS", None)
+    if bundle:
+        roots.append(bundle)
+    for root in roots:
+        try:
+            source = open(os.path.join(root, "ui", "context.py"), encoding="utf-8").read()
+            found = re.search(r'VERSION\s*=\s*"([^"]+)"', source)
+            if found:
+                return found.group(1)
+        except Exception:
+            pass
+        try:
+            text = open(os.path.join(root, "VERSION.txt"), encoding="utf-8").read()
+            found = re.search(r"V(\d+\.\d+\.\d+)", text)
+            if found:
+                return found.group(1)
+        except Exception:
+            pass
+    return "unknown"
 
 
 def run_diagnostics() -> int:
@@ -289,6 +309,14 @@ def run_diagnostics() -> int:
         add("hotkeys", "%s (Bangla/English) · %s (voice)" %
             (cfg.get("hotkey_toggle", "f10").upper(), cfg.get("hotkey_voice", "f9").upper()))
         add("text insertion", cfg.get("linux_insertion", "auto"))
+
+    try:
+        from speech_recognition.audio import get_flac_converter
+        converter = get_flac_converter()
+        present = bool(converter) and os.path.exists(converter)
+        add("speech FLAC encoder", converter if present else "missing (%s)" % converter, present)
+    except Exception as exc:
+        add("speech FLAC encoder", "unavailable (%s)" % str(exc)[:50], False)
 
     width = max(len(row[0]) for row in rows)
     print("")

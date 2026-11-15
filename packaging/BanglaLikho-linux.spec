@@ -16,6 +16,7 @@ datas = [
     (os.path.join(ROOT, "bn_words.txt"), "."),
     (os.path.join(ROOT, "WORDLIST_LICENSE.txt"), "."),
     (os.path.join(ROOT, "PRIVACY_NOTICE.txt"), "."),
+    (os.path.join(ROOT, "VERSION.txt"), "."),
     (os.path.join(ROOT, "SECURITY_MODEL_BN.txt"), "."),
     (os.path.join(ROOT, "README.txt"), "."),
     (os.path.join(ROOT, "assets"), "assets"),
@@ -73,7 +74,11 @@ a = Analysis(
 # Trim payload the hooks collect but this application never uses.
 DROP_DATA_PREFIXES = (
     "speech_recognition/pocketsphinx-data",
-    "speech_recognition/flac-",
+    # Voice input needs a FLAC encoder (SpeechRecognition re-encodes the audio
+    # before uploading it). Keep the Linux one; the other copies are dead weight.
+    "speech_recognition/flac-win32",
+    "speech_recognition/flac-mac",
+    "speech_recognition/flac-linux-x86",
     "PySide6/plugins/generic",
     "PySide6/plugins/imageformats/qsvg",
     "PySide6/plugins/imageformats/qtiff",
@@ -109,3 +114,12 @@ exe = EXE(
 
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, upx_exclude=[],
                name="BanglaLikho")
+
+# The bundled FLAC encoder must stay executable inside the bundle.
+for root, _dirs, files in os.walk(os.path.join(DISTPATH, "BanglaLikho")):
+    for name in files:
+        if name.startswith("flac-linux"):
+            try:
+                os.chmod(os.path.join(root, name), 0o755)
+            except OSError:
+                pass

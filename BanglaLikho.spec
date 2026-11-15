@@ -84,9 +84,11 @@ a = Analysis(
 # ---------------------------------------------------------------------------
 DROP_DATA_PREFIXES = (
     "speech_recognition/pocketsphinx-data",
+    # The converter is required: SpeechRecognition re-encodes the microphone
+    # audio to FLAC before uploading it. Dropping it made voice input fail with
+    # "[WinError 2] The system cannot find the file specified".
     "speech_recognition/flac-linux",
     "speech_recognition/flac-mac",
-    "speech_recognition/flac-win32",
     "PySide6/plugins/tls",
     "PySide6/plugins/generic",
     "PySide6/plugins/imageformats/qsvg",
