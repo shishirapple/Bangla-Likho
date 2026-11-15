@@ -7,6 +7,8 @@ appimagetool is available, into an AppImage.
 """
 import os
 
+from PyInstaller.utils.hooks import collect_data_files
+
 # The spec lives in packaging/, so resolve the project root explicitly. This
 # keeps the build working no matter which directory PyInstaller is started from.
 HERE = SPECPATH
