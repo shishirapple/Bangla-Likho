@@ -10,7 +10,7 @@ application imports.
 """
 import os
 
-from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 HERE = SPECPATH  # spec directory (app/)
 ROOT = os.path.dirname(HERE) if os.path.basename(HERE) == "packaging" else HERE
@@ -24,10 +24,13 @@ datas = [
     ("assets", "assets"),
 ]
 
+# libsndfile's shared library lives in the soundfile package
+datas += collect_data_files("soundfile")
+
 hiddenimports = [
     "engine", "core", "voice", "clipboard", "diagnostics", "backend_win",
     # voice stack is imported lazily on first use
-    "sounddevice", "speech_recognition", "numpy",
+    "sounddevice", "speech_recognition", "numpy", "soundfile", "_soundfile",
     # pynput backends are imported lazily by backend_win.start()
     "pynput", "pynput.keyboard", "pynput.mouse",
     "pynput.keyboard._win32", "pynput.mouse._win32", "pynput._util.win32",
@@ -84,11 +87,11 @@ a = Analysis(
 # ---------------------------------------------------------------------------
 DROP_DATA_PREFIXES = (
     "speech_recognition/pocketsphinx-data",
-    # The converter is required: SpeechRecognition re-encodes the microphone
-    # audio to FLAC before uploading it. Dropping it made voice input fail with
-    # "[WinError 2] The system cannot find the file specified".
+    # Voice audio is encoded to FLAC in-process with libsndfile, so the
+    # unsigned helper executables are not needed (and upset antivirus).
     "speech_recognition/flac-linux",
     "speech_recognition/flac-mac",
+    "speech_recognition/flac-win32",
     "PySide6/plugins/tls",
     "PySide6/plugins/generic",
     "PySide6/plugins/imageformats/qsvg",

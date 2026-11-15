@@ -311,12 +311,10 @@ def run_diagnostics() -> int:
         add("text insertion", cfg.get("linux_insertion", "auto"))
 
     try:
-        from speech_recognition.audio import get_flac_converter
-        converter = get_flac_converter()
-        present = bool(converter) and os.path.exists(converter)
-        add("speech FLAC encoder", converter if present else "missing (%s)" % converter, present)
+        import soundfile
+        add("speech FLAC encoder", "libsndfile %s" % soundfile.__libsndfile_version__, True)
     except Exception as exc:
-        add("speech FLAC encoder", "unavailable (%s)" % str(exc)[:50], False)
+        add("speech FLAC encoder", "missing (pip install soundfile) • %s" % str(exc)[:40], False)
 
     width = max(len(row[0]) for row in rows)
     print("")

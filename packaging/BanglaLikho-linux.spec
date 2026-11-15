@@ -22,9 +22,11 @@ datas = [
     (os.path.join(ROOT, "assets"), "assets"),
 ]
 
+datas += collect_data_files("soundfile")
+
 hiddenimports = [
     "engine", "core", "voice", "clipboard", "diagnostics", "backend_x11",
-    "sounddevice", "speech_recognition", "numpy",
+    "sounddevice", "speech_recognition", "numpy", "soundfile", "_soundfile",
     "pynput", "pynput.keyboard", "pynput.mouse",
     "pynput.keyboard._xorg", "pynput.mouse._xorg", "pynput._util.xorg",
 ]
@@ -96,6 +98,7 @@ DROP_EXACT = {
     "speech_recognition/flac-win32.exe",
     "speech_recognition/flac-mac",
     "speech_recognition/flac-linux-x86",
+    "speech_recognition/flac-linux-x86_64",
     "speech_recognition/pocketsphinx-data",
 }
 a.datas = [item for item in a.datas

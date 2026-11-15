@@ -177,10 +177,45 @@ class Segmenter:
         return out
 
 
+def install_flac_encoder(sr) -> bool:
+    """Encode FLAC with libsndfile instead of SpeechRecognition's bundled tool.
+
+    ``recognize_google`` normally shells out to a FLAC executable. Shipping that
+    executable inside the bundle is fragile: on Windows an unsigned helper
+    binary inside a PyInstaller payload also trips antivirus heuristics. Doing
+    the conversion in-process removes both problems.
+    """
+    try:
+        import io
+
+        import numpy as np
+        import soundfile
+    except Exception:
+        return False
+    if getattr(sr.AudioData, "_bangla_flac", False):
+        return True
+
+    def get_flac_data(audio, convert_rate=None, convert_width=None):
+        pcm = audio.get_raw_data(convert_rate=convert_rate, convert_width=convert_width)
+        rate = int(convert_rate or audio.sample_rate or 16000)
+        samples = np.frombuffer(pcm, dtype="<i2")
+        channels = getattr(audio, "channels", 1) or 1
+        if channels > 1:
+            samples = samples.reshape(-1, channels)
+        buffer = io.BytesIO()
+        soundfile.write(buffer, samples, rate, format="FLAC", subtype="PCM_16")
+        return buffer.getvalue()
+
+    sr.AudioData.get_flac_data = get_flac_data
+    sr.AudioData._bangla_flac = True
+    return True
+
+
 class GoogleRec:
     def __init__(self, lang):
         import speech_recognition as sr
         self.sr, self.lang = sr, lang
+        install_flac_encoder(sr)
         self.r = sr.Recognizer()
         self.r.operation_timeout = 10
 
@@ -211,7 +246,7 @@ class GoogleRec:
             # if the installation lost it, every request fails this way.
             raise RuntimeError(
                 "ভয়েস এনকোডার (FLAC) পাওয়া যায়নি — অ্যাপটি নতুন করে ইনস্টল করুন "
-                "(Linux-এ: sudo apt install flac) • %s" % str(exc)[:60]) from exc
+                "(python3 -m pip install soundfile) • %s" % str(exc)[:60]) from exc
 
 
 class WhisperRec:

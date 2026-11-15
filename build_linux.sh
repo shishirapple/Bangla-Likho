@@ -136,14 +136,13 @@ EOF
     fi
 fi
 
-# The voice engine re-encodes audio with this binary; a build without it can
-# start but every voice request fails, so the release must not ship.
-encoder="${APP}/_internal/speech_recognition/flac-linux-x86_64"
-if [ ! -f "$encoder" ]; then
-    echo "ERROR: the bundled FLAC encoder is missing; voice input would fail" >&2
+# Voice audio is encoded with libsndfile; a bundle without it starts fine but
+# every voice request fails, so the release must not ship.
+if ! ls "${APP}/_internal/_soundfile_data/"libsndfile* >/dev/null 2>&1; then
+    echo "ERROR: libsndfile is missing from the bundle; voice input would fail" >&2
     exit 1
 fi
-say "Bundled FLAC encoder: $(du -h "$encoder" | cut -f1)"
+say "Bundled FLAC encoder: $(du -sh "${APP}/_internal/_soundfile_data" | cut -f1)"
 
 say "Done. Artifacts in dist-release/"
 ls -lh dist-release/

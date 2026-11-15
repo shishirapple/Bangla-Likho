@@ -155,5 +155,28 @@ class VoiceTests(unittest.TestCase):
         self.assertTrue(stream.closed)
 
 
+class FlacEncoderTests(unittest.TestCase):
+    """Google speech needs FLAC; we must encode it without an external tool."""
+
+    def test_flac_data_has_a_flac_header(self):
+        import speech_recognition as sr
+
+        from voice import install_flac_encoder
+
+        self.assertTrue(install_flac_encoder(sr))
+        audio = sr.AudioData(b"\x00\x00" * 1600, 16000, 2)
+        data = audio.get_flac_data(convert_rate=16000, convert_width=2)
+        self.assertEqual(data[:4], b"fLaC")
+        self.assertGreater(len(data), 40)
+
+    def test_install_is_idempotent(self):
+        import speech_recognition as sr
+
+        from voice import install_flac_encoder
+
+        self.assertTrue(install_flac_encoder(sr))
+        self.assertTrue(install_flac_encoder(sr))
+
+
 if __name__ == "__main__":
     unittest.main()

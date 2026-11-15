@@ -2,7 +2,7 @@
 ; Compile with: ISCC.exe installer\BanglaLikho.iss
 
 #ifndef MyAppVersion
-  #define MyAppVersion "12.2.4"
+  #define MyAppVersion "12.2.5"
 #endif
 
 #define MyAppName "Bangla Likho"
