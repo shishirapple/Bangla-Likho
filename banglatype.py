@@ -930,6 +930,26 @@ if QtWidgets is not None:
 if __name__ == "__main__":
     import traceback
     try:
+        if QtWidgets is None:
+            # Never fall through to a bare NameError: say what Qt needs.
+            detail = ("%s: %s" % (type(QT_IMPORT_ERROR).__name__, QT_IMPORT_ERROR)
+                      if QT_IMPORT_ERROR is not None else "unknown import error")
+            emit("")
+            emit("Bangla Likho cannot start: the Qt user interface could not be loaded.")
+            emit("Reason: " + detail)
+            emit("")
+            emit("On Linux install the Qt runtime libraries, for example:")
+            emit("  sudo apt install libgl1 libegl1 libxkbcommon-x11-0 libxcb-cursor0")
+            emit("Or run:  bangla-likho --diagnose")
+            try:
+                from engine import config_dir as _config_dir
+                folder = _config_dir()
+                os.makedirs(folder, exist_ok=True)
+                with open(os.path.join(folder, "startup-error.log"), "a", encoding="utf-8") as handle:
+                    handle.write("\n========== QT IMPORT FAILED ==========\n" + detail + "\n")
+            except Exception:
+                pass
+            raise SystemExit(3)
         main()
     except Exception:
         detail = traceback.format_exc()
