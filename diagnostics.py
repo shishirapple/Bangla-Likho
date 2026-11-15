@@ -80,6 +80,17 @@ def install(config_path: str) -> str:
     return log_dir
 
 
+def note(message: str) -> None:
+    """Log a short technical note (ASCII only, never user text)."""
+    try:
+        clean = " ".join(str(message).split())[:160]
+        clean = clean.encode("ascii", "ignore").decode("ascii")
+        if clean:
+            _LOGGER.info("note: %s", clean)
+    except Exception:
+        pass
+
+
 def timing(name: str, milliseconds: float) -> None:
     """Log a numeric startup measurement (no user content can leak)."""
     if name in {"startup_complete", "ui_ready"}:

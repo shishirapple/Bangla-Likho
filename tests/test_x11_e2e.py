@@ -137,9 +137,10 @@ class X11EndToEndTests(unittest.TestCase):
         self.assertTrue(self._wait_for(lambda: self.composer.buf == "test", 3.0))
         self._press_function_key(XK.XK_Escape)
         self.assertTrue(self._wait_for(lambda: not self.composer.buf, 3.0))
+        self.assertTrue(self._wait_for(lambda: self.commits == ["test"], 4.0), self.commits)
         # The composer reports the kept English text once, but the backend must
         # recognise it as "already on screen" and never create an injector.
-        self.assertEqual(self.commits, ["test"])
+        time.sleep(0.6)
         self.assertIsNone(self.backend.injector, "Esc must not retype the text")
 
     # ----------------------------------------------------------------- hotkeys

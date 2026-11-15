@@ -8,7 +8,7 @@ keyboard hook, the voice stack or the single-instance socket.
 from __future__ import annotations
 
 APP_NAME = "Bangla Likho"
-VERSION = "12.2.1"
+VERSION = "12.2.2"
 
 
 class Context:
@@ -32,6 +32,7 @@ class Context:
         self.on_reset_settings = lambda: None
         self.on_shortcut_change = lambda: True
         self.on_snippets_change = lambda: None
+        self.on_insertion_change = lambda method: None
         self.on_set_autostart = lambda enabled: True
         self.on_get_autostart = lambda: False
 

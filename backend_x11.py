@@ -21,6 +21,7 @@ asks the user to pick an X11 session instead.
 from __future__ import annotations
 
 import os
+import queue
 import threading
 import time
 import traceback
@@ -32,6 +33,23 @@ KEY_NAMES = {
     "home", "end", "delete", "pageup", "pagedown",
 }
 _MODIFIER_NAMES = {"ctrl", "alt", "shift", "cmd"}
+
+
+XTERM_LIKE = {"xterm", "uxterm", "urxvt", "rxvt", "st", "sakura", "roxterm"}
+TERMINAL_CLASSES = {
+    "xterm", "uxterm", "urxvt", "rxvt", "st", "gnome-terminal-server", "gnome-terminal",
+    "konsole", "xfce4-terminal", "terminator", "tilix", "alacritty", "kitty", "wezterm",
+    "foot", "terminology", "guake", "tilda", "qterminal", "lxterminal", "mate-terminal",
+    "sakura", "roxterm", "eterm",
+}
+
+
+def _note(message: str) -> None:
+    try:
+        from diagnostics import note
+        note(message)
+    except Exception:
+        pass
 
 
 def session_is_wayland() -> bool:
@@ -190,16 +208,28 @@ class XTestInjector:
             traceback.print_exc()
             return False
 
-    def paste(self) -> bool:
-        """Ctrl+V fallback (used when the scratch keycode is unavailable)."""
+    def paste(self, modifiers=("ctrl",), key: str = "v") -> bool:
+        """Send a paste shortcut (Ctrl+V, Ctrl+Shift+V, Shift+Insert …)."""
         from Xlib import XK
 
+        mods = {
+            "ctrl": XK.XK_Control_L,
+            "shift": XK.XK_Shift_L,
+            "alt": XK.XK_Alt_L,
+        }
         try:
-            ctrl = self._keycode(XK.XK_Control_L)
-            vee = self._keycode(XK.XK_v)
-            self._xtest.fake_input(self.display, self._X.KeyPress, ctrl)
-            self._press(vee)
-            self._xtest.fake_input(self.display, self._X.KeyRelease, ctrl)
+            pressed = []
+            for name in modifiers:
+                keysym = mods.get(name)
+                if keysym is None:
+                    continue
+                code = self._keycode(keysym)
+                self._xtest.fake_input(self.display, self._X.KeyPress, code)
+                pressed.append(code)
+            key_sym = XK.XK_Insert if key == "insert" else XK.string_to_keysym(key)
+            self._press(self._keycode(key_sym))
+            for code in reversed(pressed):
+                self._xtest.fake_input(self.display, self._X.KeyRelease, code)
             self.display.sync()
             return True
         except Exception:
@@ -218,6 +248,9 @@ class XTestInjector:
 # Output adapter consumed by core.Composer
 # --------------------------------------------------------------------------- #
 class X11Output:
+    # X11 cannot suppress keystrokes, so Tab/arrows must not drive the popup.
+    supports_navigation = False
+
     def __init__(self, backend: "X11Backend"):
         self._backend = backend
 
@@ -252,11 +285,19 @@ class X11Backend:
         self.mouse = None
         self.injector: XTestInjector | None = None
         self._pending: list[str] = []
-        self._inject_lock = threading.Lock()
-        self._injecting = False
         self._ignore_until = 0.0
         self._output = X11Output(self)
         self.started = False
+        # Insertion runs on its own thread: the keyboard listener must never
+        # block, otherwise every commit freezes typing and the UI.
+        self._tasks: queue.Queue = queue.Queue()
+        self._worker: threading.Thread | None = None
+        self._worker_lock = threading.Lock()
+        self.insertion = str(cfg.get("linux_insertion", "auto")).lower()
+        if self.insertion not in ("auto", "type", "paste"):
+            self.insertion = "auto"
+        self._type_failed = False
+        self._last_strategy = "auto"
 
     # ------------------------------------------------------------------ setup
     def make_output(self) -> "X11Output":
@@ -277,68 +318,142 @@ class X11Backend:
             return False
 
     # ----------------------------------------------------------------- output
+    def set_insertion_method(self, method: str) -> None:
+        method = str(method or "auto").lower()
+        self.insertion = method if method in ("auto", "type", "paste") else "auto"
+
     def commit_text(self, value: str) -> None:
         typed = "".join(self._pending)
         self._pending.clear()
         if not value:
             return
-        self._inject(lambda: self._apply_commit(typed, value))
+        # Ignore our own keystrokes *before* they are generated, and hand the
+        # work to the injection thread so the listener never blocks.
+        self._ignore_until = time.time() + 0.45
+        self._submit(lambda: self._perform_commit(typed, value))
 
-    def _apply_commit(self, typed: str, value: str) -> None:
+    def tap_key(self, name: str) -> None:
+        self._ignore_until = time.time() + 0.35
+        self._submit(lambda: self._tap(name))
+
+    # ------------------------------------------------------------- injection
+    def _submit(self, task) -> None:
+        self._ensure_worker()
+        self._tasks.put(task)
+
+    def _ensure_worker(self) -> None:
+        if self._worker is not None and self._worker.is_alive():
+            return
+        with self._worker_lock:
+            if self._worker is not None and self._worker.is_alive():
+                return
+            self._worker = threading.Thread(target=self._worker_loop,
+                                            name="bangla-x11-inject", daemon=True)
+            self._worker.start()
+
+    def _worker_loop(self) -> None:
+        while True:
+            task = self._tasks.get()
+            try:
+                if task is None:
+                    return
+                task()
+            except Exception:
+                traceback.print_exc()
+            finally:
+                self._tasks.task_done()
+
+    def _tap(self, name: str) -> None:
+        if self._ensure_injector():
+            self.injector.tap(name)
+
+    def _perform_commit(self, typed: str, value: str) -> None:
+        started = time.time()
         if typed and value == typed:
-            # "keep English" path: the text is already on screen
+            # "keep English": the text is already on screen, nothing to do.
+            _note("commit keep-english chars=%d" % len(typed))
             return
+        strategy = self._choose_strategy()
         if not self._ensure_injector():
-            self._commit_via_clipboard(typed, value)
+            _note("commit failed: no injector")
             return
-        if typed:
-            self.injector.backspace(len(typed))
-        if not self.injector.type_text(value):
-            self._commit_via_clipboard("", value)
-
-    def _commit_via_clipboard(self, typed: str, value: str) -> None:
-        """Fallback for exotic X servers: paste the result instead of typing it."""
         try:
             if typed:
-                if self.injector is not None:
-                    self.injector.backspace(len(typed))
-            previous = None
+                self.injector.backspace(len(typed))
+            if strategy == "paste":
+                ok = self._paste_text(value)
+            else:
+                ok = self.injector.type_text(value)
+                if not ok:
+                    self._type_failed = True
+                    ok = self._paste_text(value)
+                    strategy += "+paste"
+        except Exception as exc:
+            _note("commit error %s" % type(exc).__name__)
+            ok = False
+        elapsed = int((time.time() - started) * 1000)
+        _note("commit strategy=%s chars=%d deleted=%d ok=%s ms=%d"
+              % (strategy, len(value), len(typed), ok, elapsed))
+
+    def _choose_strategy(self) -> str:
+        if self.insertion in ("type", "paste"):
+            return self.insertion
+        # Automatic: clipboard insertion is far more reliable than a temporary
+        # keysym remap, which some toolkits cache and then ignore.
+        return "paste"
+
+    def paste_shortcut(self) -> tuple:
+        """The paste combination the focused application expects."""
+        window_class = self._active_window_class()
+        if window_class in XTERM_LIKE:
+            return ("shift",), "insert"
+        if window_class in TERMINAL_CLASSES:
+            return ("ctrl", "shift"), "v"
+        return ("ctrl",), "v"
+
+    def _active_window_class(self) -> str:
+        try:
+            display = self.injector.display if self.injector is not None else None
+            if display is None:
+                return ""
+            root = display.screen().root
+            atom = display.intern_atom("_NET_ACTIVE_WINDOW")
+            prop = root.get_full_property(atom, 0)
+            if not prop or not prop.value:
+                return ""
+            window = display.create_resource_object("window", int(prop.value[0]))
+            wm_class = window.get_wm_class()
+            if not wm_class:
+                return ""
+            return str(wm_class[-1] or wm_class[0] or "").lower()
+        except Exception:
+            return ""
+
+    def _paste_text(self, value: str) -> bool:
+        """Insert via the clipboard + Ctrl+V (reliable in GUI applications)."""
+        previous = None
+        try:
             if self.clip is not None:
                 previous = self.clip.get_text()
                 self.clip.set_text(value)
             else:
                 from PySide6 import QtGui
                 QtGui.QGuiApplication.clipboard().setText(value)
-            if self.injector is not None:
-                self.injector.paste()
-            if previous is not None and self.clip is not None:
-                threading.Timer(0.45, lambda: self.clip.set_text(previous)).start()
+            modifiers, key = self.paste_shortcut()
+            if not self.injector.paste(modifiers, key):
+                return False
+            time.sleep(0.18)
+            return True
         except Exception:
             traceback.print_exc()
+            return False
+        finally:
+            if previous is not None and self.clip is not None:
+                threading.Timer(0.8, lambda: self.clip.set_text(previous)).start()
 
-    def tap_key(self, name: str) -> None:
-        def run():
-            if self._ensure_injector():
-                self.injector.tap(name)
-        self._inject(run)
-
-    def _inject(self, action) -> None:
-        """Run an injection while keeping our own listener quiet.
-
-        python-xlib displays are not thread-safe and the composer can commit
-        from the listener thread while the UI triggers a key press, so every
-        injection is serialised.
-        """
-        with self._inject_lock:
-            if self._injecting:
-                return
-            self._injecting = True
-            try:
-                action()
-            finally:
-                # X events travel asynchronously; ignore echoes for a moment
-                self._ignore_until = time.time() + 0.25
-                self._injecting = False
+    def _commit_via_clipboard(self, typed: str, value: str) -> None:
+        """Kept for compatibility with older callers."""
+        self._perform_commit(typed, value)
 
     # ---------------------------------------------------------------- hotkeys
     def set_hotkeys(self, cfg) -> None:
@@ -423,11 +538,18 @@ class X11Backend:
                 return
             if self.c is None:
                 return
-            tracked = name == "char" and len(char) == 1 and char.isprintable()
-            if tracked:
-                self._pending.append(char)
+            # Everything the user types becomes visible in the application:
+            # characters, but also the Space/Enter that commits a suggestion.
+            # Those keys must be removed as well before the Bengali text is
+            # inserted, otherwise a stray space or newline is left behind.
+            visible = {"space": " ", "enter": "\n", "tab": "\t"}
+            shown = visible.get(name)
+            if shown is None and name == "char" and len(char) == 1 and char.isprintable():
+                shown = char
+            if shown is not None:
+                self._pending.append(shown)
             consumed = self.c.key(name, char, self.mods)
-            if tracked and not consumed and self._pending and self._pending[-1] == char:
+            if shown is not None and not consumed and self._pending and self._pending[-1] == shown:
                 self._pending.pop()
         except Exception:
             traceback.print_exc()
@@ -469,6 +591,10 @@ class X11Backend:
             return False
 
     def stop(self) -> None:
+        if self._worker is not None and self._worker.is_alive():
+            self._tasks.put(None)
+            self._worker.join(timeout=1.0)
+            self._worker = None
         for listener in (self.listener, self.mouse):
             try:
                 if listener is not None:

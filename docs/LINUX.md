@@ -166,6 +166,20 @@ completely.
 
 ## 7. Troubleshooting
 
+**Bengali text does not appear, or only part of the English word is replaced**
+: Bangla Likho inserts text by pasting it (the most reliable method on X11).
+  Check **Settings → Typing behaviour → Linux text insertion**:
+
+  - *Automatic* (default) pastes with `Ctrl+V`, or `Ctrl+Shift+V` /
+    `Shift+Insert` in terminals.
+  - *Type like a keyboard* uses XTest for every character; some applications
+    cache their keymap and ignore the temporary keycode, which is why it is not
+    the default.
+  - *Paste from clipboard* forces the clipboard path everywhere.
+
+  If insertion seems to freeze, update to 12.2.2 or newer: insertion now runs on
+  its own thread, so the keyboard listener and the interface never block.
+
 **“Global typing does not work”**
 : Run the built-in check first — it tests the X connection, XTEST, text
   injection and key capture on your machine:

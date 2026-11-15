@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -59,6 +60,18 @@ class SettingsPage(Page):
         self.enter_sends.toggled.connect(lambda v: self._set_cfg("enter_also_sends", v))
         card.body().addWidget(self._row("Enter also sends", "Enter চাপলে সাজেশন কমিট করে নতুন লাইন দেবে",
                                         self.enter_sends))
+        if sys.platform.startswith("linux"):
+            card.body().addWidget(widgets.Divider(card))
+            self.insertion = widgets.Select(
+                [("Automatic (recommended)", "auto"),
+                 ("Type like a keyboard (XTest)", "type"),
+                 ("Paste from clipboard", "paste")],
+                str(cfg.get("linux_insertion", "auto")), width=290)
+            self.insertion.changed.connect(self._insertion_changed)
+            card.body().addWidget(self._row(
+                "Linux text insertion",
+                "কীভাবে বাংলা লেখা বসানো হবে — স্বয়ংক্রিয়, সরাসরি টাইপ, নাকি ক্লিপবোর্ড পেস্ট",
+                self.insertion))
 
         # --------------------------------------------------------- snippets
         card = self._header_card("zap", "Snippets", "/ শর্টকাট টেক্সট",
@@ -200,6 +213,12 @@ class SettingsPage(Page):
         return edit
 
     # ---------------------------------------------------------------- actions
+    def _insertion_changed(self, method: str) -> None:
+        self.context.cfg["linux_insertion"] = method
+        self.context.on_insertion_change(method)
+        self.context.on_save()
+        self.context.toast("টেক্সট বসানোর পদ্ধতি সংরক্ষণ করা হয়েছে")
+
     def _set_cfg(self, key: str, value) -> None:
         self.context.cfg[key] = value
         self.context.on_save()

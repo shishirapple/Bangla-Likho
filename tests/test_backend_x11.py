@@ -48,6 +48,10 @@ class FakeInjector:
         self.tapped.append(name)
         return True
 
+    def paste(self):
+        self.pasted = getattr(self, "pasted", 0) + 1
+        return True
+
     def close(self):
         pass
 
@@ -59,12 +63,23 @@ class X11BackendTests(unittest.TestCase):
     def _backend(self):
         backend = X11Backend(None, CFG)
         backend.injector = FakeInjector()
+        backend.insertion = "type"  # keep the tests deterministic
         return backend
+
+    def _wait(self, predicate, timeout=2.0):
+        import time as _time
+        deadline = _time.time() + timeout
+        while _time.time() < deadline:
+            if predicate():
+                return True
+            _time.sleep(0.02)
+        return False
 
     def test_commit_removes_typed_text_then_types_bengali(self):
         backend = self._backend()
         backend._pending = list("kemon")
         backend.commit_text("কেমন")
+        self.assertTrue(self._wait(lambda: backend.injector.typed))
         self.assertEqual(backend.injector.backspaces, [5])
         self.assertEqual(backend.injector.typed, ["কেমন"])
         self.assertEqual(backend._pending, [])
@@ -80,6 +95,7 @@ class X11BackendTests(unittest.TestCase):
         backend = self._backend()
         backend._pending = list(";salam")
         backend.commit_text("আসসালামু আলাইকুম")
+        self.assertTrue(self._wait(lambda: backend.injector.typed))
         self.assertEqual(backend.injector.backspaces, [6])
         self.assertEqual(backend.injector.typed, ["আসসালামু আলাইকুম"])
 
@@ -93,7 +109,38 @@ class X11BackendTests(unittest.TestCase):
     def test_special_key_tap(self):
         backend = self._backend()
         backend.tap_key("enter")
+        self.assertTrue(self._wait(lambda: backend.injector.tapped))
         self.assertEqual(backend.injector.tapped, ["enter"])
+
+    def test_space_commit_is_deleted_with_the_word(self):
+        """Space is not suppressible on X11, so it must be removed too."""
+        from pynput.keyboard import Key
+
+        backend = self._backend()
+        calls = []
+
+        class _Composer:
+            def key(self, name, ch="", mods=()):
+                calls.append(name)
+                return True   # a commit consumed the space
+
+        backend.c = _Composer()
+        backend._on_press(Key.space)
+        self.assertEqual(backend._pending, [" "])
+        self.assertEqual(calls, ["space"])
+
+    def test_unconsumed_space_stays_on_screen(self):
+        from pynput.keyboard import Key
+
+        backend = self._backend()
+
+        class _Composer:
+            def key(self, name, ch="", mods=()):
+                return False  # not composing: the space is ordinary text
+
+        backend.c = _Composer()
+        backend._on_press(Key.space)
+        self.assertEqual(backend._pending, [])
 
     def test_hotkey_matching_uses_configured_keys(self):
         backend = self._backend()
@@ -151,6 +198,77 @@ class X11BackendTests(unittest.TestCase):
                                 text=True, timeout=60)
         self.assertEqual(output.returncode, 0, output.stderr)
         self.assertEqual(output.stdout.strip(), "False")
+
+
+class InsertionStrategyTests(unittest.TestCase):
+    """The Linux insert path must pick the right strategy per application."""
+
+    @staticmethod
+    def _backend():
+        backend = X11Backend(None, {"hotkey_toggle": "f10", "hotkey_voice": "f9"})
+        return backend
+
+    def test_auto_pastes_in_normal_applications(self):
+        backend = self._backend()
+        backend._active_window_class = lambda: "firefox"
+        self.assertEqual(backend._choose_strategy(), "paste")
+
+    def test_auto_pastes_in_terminals_too(self):
+        """Clipboard insertion is used everywhere; only the shortcut differs."""
+        for window_class in ("gnome-terminal-server", "konsole", "xterm", "alacritty"):
+            backend = self._backend()
+            backend._active_window_class = lambda c=window_class: c
+            self.assertEqual(backend._choose_strategy(), "paste", window_class)
+
+    def test_paste_shortcut_matches_the_application(self):
+        backend = self._backend()
+        backend._active_window_class = lambda: "xterm"
+        self.assertEqual(backend.paste_shortcut(), (("shift",), "insert"))
+        backend._active_window_class = lambda: "gnome-terminal-server"
+        self.assertEqual(backend.paste_shortcut(), (("ctrl", "shift"), "v"))
+        backend._active_window_class = lambda: "firefox"
+        self.assertEqual(backend.paste_shortcut(), (("ctrl",), "v"))
+
+    def test_explicit_method_wins(self):
+        backend = self._backend()
+        backend.set_insertion_method("paste")
+        backend._active_window_class = lambda: "xterm"
+        self.assertEqual(backend._choose_strategy(), "paste")
+        backend.set_insertion_method("type")
+        backend._active_window_class = lambda: "firefox"
+        self.assertEqual(backend._choose_strategy(), "type")
+
+    def test_invalid_method_falls_back_to_auto(self):
+        backend = self._backend()
+        backend.set_insertion_method("nonsense")
+        self.assertEqual(backend.insertion, "auto")
+
+    def test_explicit_type_is_respected(self):
+        backend = self._backend()
+        backend.set_insertion_method("type")
+        backend._active_window_class = lambda: "firefox"
+        self.assertEqual(backend._choose_strategy(), "type")
+
+    def test_commit_returns_immediately(self):
+        """The keyboard listener must never block on injection."""
+        import time as _time
+
+        backend = self._backend()
+        backend._pending = list("kemon")
+        started = _time.perf_counter()
+        backend.commit_text("কেমন")
+        elapsed = _time.perf_counter() - started
+        self.assertLess(elapsed, 0.05, "commit_text blocked the caller")
+        self.assertEqual(backend._pending, [])
+
+    def test_keep_english_never_creates_an_injector(self):
+        import time as _time
+
+        backend = self._backend()
+        backend._pending = list("test")
+        backend.commit_text("test")
+        _time.sleep(0.4)
+        self.assertIsNone(backend.injector)
 
 
 if __name__ == "__main__":

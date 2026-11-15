@@ -189,6 +189,12 @@ class Composer:
             if not composing:
                 return False
 
+            # Backends without key suppression (X11) cannot swallow Tab or the
+            # arrow keys, so navigating with them would also move the caret in
+            # the target application. There we commit instead and let the
+            # application handle the key.
+            can_navigate = getattr(self.out, "supports_navigation", True)
+
             if name == "space":
                 self._commit(trailing=" ")
             elif name == "enter":
@@ -196,10 +202,19 @@ class Composer:
                 if self.cfg.get("enter_also_sends", False):
                     self.out.key("enter")
             elif name == "tab":
+                if not can_navigate:
+                    self._commit()
+                    return False
                 self._move(-1 if "shift" in mods else 1)
             elif name == "down":
+                if not can_navigate:
+                    self._commit()
+                    return False
                 self._move(1)
             elif name == "up":
+                if not can_navigate:
+                    self._commit()
+                    return False
                 self._move(-1)
             elif name == "backspace":
                 self.buf = self.buf[:-1]

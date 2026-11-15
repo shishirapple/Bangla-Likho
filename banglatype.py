@@ -193,6 +193,7 @@ def run_diagnostics() -> int:
         cfg = load_cfg()
         add("hotkeys", "%s (Bangla/English) · %s (voice)" %
             (cfg.get("hotkey_toggle", "f10").upper(), cfg.get("hotkey_voice", "f9").upper()))
+        add("text insertion", cfg.get("linux_insertion", "auto"))
 
     width = max(len(row[0]) for row in rows)
     print("")
@@ -639,6 +640,8 @@ if QtWidgets is not None:
         context.on_reset_learning = lambda: _reset_learning(engine)
         context.on_reset_settings = lambda: _reset_settings(cfg, window)
         context.on_snippets_change = lambda: None
+        context.on_insertion_change = lambda method: (
+            backend.set_insertion_method(method), save_cfg(cfg))
 
         badge.mode_clicked.connect(composer.toggle)
         badge.voice_clicked.connect(request_voice_toggle)
