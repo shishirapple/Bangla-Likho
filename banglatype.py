@@ -103,6 +103,53 @@ def save_cfg(cfg: dict) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# Crash logging — a windowed app has no console, so failures must reach a file
+# --------------------------------------------------------------------------- #
+def install_crash_logging():
+    """Record unhandled exceptions and hard crashes (faulthandler) to a file."""
+    import faulthandler
+    import traceback
+
+    try:
+        folder = os.path.join(config_dir(), "logs")
+        os.makedirs(folder, exist_ok=True)
+        handle = open(os.path.join(folder, "crash.log"), "a", buffering=1, encoding="utf-8")
+    except Exception:
+        return None
+
+    try:
+        faulthandler.enable(handle)
+    except Exception:
+        pass
+
+    def write(exc_type, exc_value, exc_tb):
+        try:
+            handle.write("=" * 70 + "\n")
+            handle.write(time.strftime("%Y-%m-%d %H:%M:%S") + "  " + sys.platform + "\n")
+            handle.write("session=%s display=%s\n" % (
+                os.environ.get("XDG_SESSION_TYPE", "?"), os.environ.get("DISPLAY", "?")))
+            traceback.print_exception(exc_type, exc_value, exc_tb, file=handle)
+            handle.flush()
+        except Exception:
+            pass
+        try:
+            sys.__excepthook__(exc_type, exc_value, exc_tb)
+        except Exception:
+            pass
+
+    sys.excepthook = write
+
+    def thread_hook(args):
+        write(args.exc_type, args.exc_value, args.exc_traceback)
+
+    try:
+        threading.excepthook = thread_hook
+    except Exception:
+        pass
+    return handle
+
+
+# --------------------------------------------------------------------------- #
 # Linux diagnostics (works without Qt, so it can run from a terminal)
 # --------------------------------------------------------------------------- #
 def _read_version() -> str:
@@ -130,6 +177,7 @@ def run_diagnostics() -> int:
     add("platform", sys.platform)
     add("python", sys.version.split()[0])
     add("config folder", config_dir())
+    add("crash log", os.path.join(config_dir(), "logs", "crash.log"))
 
     is_linux = sys.platform.startswith("linux")
     wayland = False
@@ -442,6 +490,7 @@ if QtWidgets is not None:
 
     # ------------------------------------------------------------------- main
     def main() -> None:
+        install_crash_logging()
         if "--diagnose" in sys.argv:
             raise SystemExit(run_diagnostics())
         if "--self-check" in sys.argv:

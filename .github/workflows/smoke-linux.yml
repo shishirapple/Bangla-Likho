@@ -1,0 +1,87 @@
+name: Linux launch smoke
+
+# Starts the real application on a virtual X display, waits, and fails if the
+# process dies. This is how "it closes 3-5 seconds after launch" is caught
+# before a release.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  launch:
+    name: Launch ${{ matrix.mode }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: x11
+            session: x11
+            qpa: xcb
+            wayland_display: ""
+          - mode: simulated-wayland
+            session: wayland
+            qpa: xcb
+            wayland_display: wayland-0
+          - mode: offscreen
+            session: wayland
+            qpa: offscreen
+            wayland_display: wayland-0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libegl1 libgl1 libxkbcommon-x11-0 \
+            libdbus-1-3 libportaudio2 fontconfig xauth libxcb-cursor0 libxcb-icccm4 \
+            libxcb-keysyms1 libxcb-shape0 libxcb-randr0 libxcb-render-util0
+          python -m pip install --upgrade pip --quiet
+          python -m pip install -r requirements-linux.txt --quiet
+
+      - name: Start the application and watch it
+        shell: bash
+        env:
+          XDG_SESSION_TYPE: ${{ matrix.session }}
+          QT_QPA_PLATFORM: ${{ matrix.qpa }}
+          WAYLAND_DISPLAY: ${{ matrix.wayland_display }}
+        run: |
+          set +e
+          xvfb-run -a python banglatype.py > /tmp/app.out 2>&1 &
+          launcher=$!
+          sleep 25
+          if kill -0 $launcher 2>/dev/null; then
+            echo "APP ALIVE after 25s"
+            kill $launcher 2>/dev/null
+            sleep 1
+            pkill -f banglatype.py 2>/dev/null
+            exit 0
+          fi
+          echo "APP DIED before 25s"
+          wait $launcher
+          echo "exit code: $?"
+          echo "----- stdout/stderr -----"
+          cat /tmp/app.out
+          echo "----- app log -----"
+          find "$HOME/.config" -name "*.log" -maxdepth 4 -print -exec tail -n 60 {} \;
+          exit 1
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-${{ matrix.mode }}
+          path: |
+            /tmp/app.out
+          if-no-files-found: ignore
