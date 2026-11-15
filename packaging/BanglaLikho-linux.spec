@@ -74,11 +74,6 @@ a = Analysis(
 # Trim payload the hooks collect but this application never uses.
 DROP_DATA_PREFIXES = (
     "speech_recognition/pocketsphinx-data",
-    # Voice input needs a FLAC encoder (SpeechRecognition re-encodes the audio
-    # before uploading it). Keep the Linux one; the other copies are dead weight.
-    "speech_recognition/flac-win32",
-    "speech_recognition/flac-mac",
-    "speech_recognition/flac-linux-x86",
     "PySide6/plugins/generic",
     "PySide6/plugins/imageformats/qsvg",
     "PySide6/plugins/imageformats/qtiff",
@@ -93,6 +88,21 @@ a.datas = [item for item in a.datas
 a.binaries = [item for item in a.binaries
               if not any(item[0].replace("\\", "/").startswith(prefix)
                          for prefix in DROP_DATA_PREFIXES)]
+
+# Voice input needs the FLAC encoder (SpeechRecognition re-encodes the audio
+# before uploading it). Drop only the copies for other platforms — a prefix
+# match on "flac-linux-x86" would also remove "flac-linux-x86_64".
+DROP_EXACT = {
+    "speech_recognition/flac-win32.exe",
+    "speech_recognition/flac-mac",
+    "speech_recognition/flac-linux-x86",
+    "speech_recognition/pocketsphinx-data",
+}
+a.datas = [item for item in a.datas
+           if item[0].replace("\\", "/").rstrip("/") not in DROP_EXACT
+           and not item[0].replace("\\", "/").startswith("speech_recognition/pocketsphinx-data/")]
+a.binaries = [item for item in a.binaries
+              if item[0].replace("\\", "/") not in DROP_EXACT]
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 

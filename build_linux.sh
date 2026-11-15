@@ -140,7 +140,8 @@ fi
 # start but every voice request fails, so the release must not ship.
 encoder="${APP}/_internal/speech_recognition/flac-linux-x86_64"
 if [ ! -f "$encoder" ]; then
-    fail "the bundled FLAC encoder is missing; voice input would fail"
+    echo "ERROR: the bundled FLAC encoder is missing; voice input would fail" >&2
+    exit 1
 fi
 say "Bundled FLAC encoder: $(du -h "$encoder" | cut -f1)"
 
