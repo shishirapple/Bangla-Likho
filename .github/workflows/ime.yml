@@ -26,16 +26,20 @@ jobs:
           sudo apt-get install -y -qq ibus python3-gi gir1.2-ibus-1.0 \
             xvfb dbus dbus-x11
 
-      - name: Install the engine into a throw-away home
-        env:
-          HOME: /tmp/imehome
+      - name: Install the engine (user and system)
         run: |
+          export HOME=/tmp/imehome
           mkdir -p "$HOME"
           bash ime/install-ime.sh --no-restart
           test -f "$HOME/.local/share/ibus/component/bangla-likho.xml"
-          grep -q "Bangla Likho" "$HOME/.local/share/ibus/component/bangla-likho.xml"
+          grep -q "Bangla Likho (Phonetic)" "$HOME/.local/share/ibus/component/bangla-likho.xml"
           test -x "$HOME/.local/bin/bangla-likho-ime"
-          ls -la "$HOME/.local/share/bangla-likho/ime"
+          "$HOME/.local/bin/bangla-likho-ime" --check
+          echo "--- system-wide installation ---"
+          sudo bash ime/install-ime.sh --system --no-restart
+          test -f /usr/share/ibus/component/bangla-likho.xml
+          test -x /usr/local/bin/bangla-likho-ime
+          sudo /usr/local/bin/bangla-likho-ime --check
 
       - name: Inspect what was installed
         env:
@@ -64,20 +68,13 @@ jobs:
           "$HOME/.local/bin/bangla-likho-ime" --check 2>&1 | head -5 || true
 
       - name: The daemon lists and activates the engine
-        env:
-          HOME: /tmp/imehome
         run: |
           dbus-run-session -- xvfb-run -a bash -euxo pipefail -c '
-            export XDG_DATA_HOME="$HOME/.local/share"
-            export XDG_CONFIG_HOME="$HOME/.config"
-            export XDG_CACHE_HOME="$HOME/.cache"
-            env | grep -i "^XDG" || true
             rm -rf "$HOME/.cache/ibus"
             ibus-daemon -drx --panel=disable > /tmp/ibus.log 2>&1 &
             sleep 8
             ibus write-cache || true
-            ibus restart || true
-            sleep 6
+            sleep 4
             ibus list-engine > /tmp/engines.txt 2>&1 || true
             grep -i "bangla" /tmp/engines.txt || echo "NO BANGLA ENGINE IN LIST"
             grep -q "bangla-likho" /tmp/engines.txt
