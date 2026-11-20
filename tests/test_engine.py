@@ -5,6 +5,14 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from engine import Engine, convert
 
+def setUpModule():
+    """Keep tests away from the real settings and learned spellings."""
+    import os
+    import tempfile
+
+    os.environ.setdefault("BANGLA_LIKHO_HOME", tempfile.mkdtemp(prefix="bl-tests-"))
+
+
 class BanglaTypeRegression(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

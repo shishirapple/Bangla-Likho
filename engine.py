@@ -58,6 +58,10 @@ def _dpapi_transform(data: bytes, protect: bool) -> bytes:
 
 
 def config_dir():
+    # Explicit override (portable installs, tests, sandboxed runs).
+    override = os.environ.get("BANGLA_LIKHO_HOME")
+    if override:
+        return os.path.abspath(override)
     if IS_WIN:
         base = os.environ.get("APPDATA", os.path.expanduser("~"))
     else:

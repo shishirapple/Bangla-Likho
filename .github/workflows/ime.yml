@@ -1,0 +1,61 @@
+name: IBus input method
+
+# Verifies that the IBus engine installs into a user profile and is really
+# registered with a running daemon — the Linux-native typing path that works
+# on Wayland too.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    name: Engine registration
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install IBus and its Python bindings
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ibus python3-gi gir1.2-ibus-1.0 \
+            xvfb dbus dbus-x11
+
+      - name: Install the engine into a throw-away home
+        env:
+          HOME: /tmp/imehome
+        run: |
+          mkdir -p "$HOME"
+          bash ime/install-ime.sh --no-restart
+          test -f "$HOME/.local/share/ibus/component/bangla-likho.xml"
+          grep -q "Bangla Likho" "$HOME/.local/share/ibus/component/bangla-likho.xml"
+          test -x "$HOME/.local/bin/bangla-likho-ime"
+          ls -la "$HOME/.local/share/bangla-likho/ime"
+
+      - name: The daemon lists and activates the engine
+        env:
+          HOME: /tmp/imehome
+        run: |
+          dbus-run-session -- xvfb-run -a bash -euxo pipefail -c '
+            ibus-daemon -drx --panel=disable > /tmp/ibus.log 2>&1 &
+            sleep 6
+            ibus list-engine | tee /tmp/engines.txt
+            grep -q "bangla-likho" /tmp/engines.txt
+            ibus engine bangla-likho
+            sleep 3
+            ibus engine | tee /tmp/current.txt
+            grep -q "bangla-likho" /tmp/current.txt
+          '
+
+      - name: Show IBus log
+        if: always()
+        run: |
+          echo "----- ibus.log -----"
+          cat /tmp/ibus.log 2>/dev/null || true
+          echo "----- engines -----"
+          cat /tmp/engines.txt 2>/dev/null || true

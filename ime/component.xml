@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Installed into ~/.local/share/ibus/component/bangla-likho.xml -->
+<component>
+    <name>org.freedesktop.IBus.BanglaLikho</name>
+    <description>Bangla Likho phonetic input method</description>
+    <exec>@EXEC@</exec>
+    <version>@VERSION@</version>
+    <author>Bangla Likho</author>
+    <license>MIT</license>
+    <homepage>https://github.com/shishirapple/Bangla-Likho</homepage>
+    <textdomain>bangla-likho</textdomain>
+    <engines>
+        <engine>
+            <name>bangla-likho</name>
+            <language>bn</language>
+            <license>MIT</license>
+            <author>Bangla Likho</author>
+            <layout>us</layout>
+            <longname>Bangla Likho (Phonetic)</longname>
+            <description>Type Bangla phonetically — works in every application</description>
+            <icon>bangla-likho</icon>
+            <rank>50</rank>
+        </engine>
+    </engines>
+</component>
