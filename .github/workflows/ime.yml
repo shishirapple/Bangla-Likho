@@ -68,6 +68,10 @@ jobs:
           HOME: /tmp/imehome
         run: |
           dbus-run-session -- xvfb-run -a bash -euxo pipefail -c '
+            export XDG_DATA_HOME="$HOME/.local/share"
+            export XDG_CONFIG_HOME="$HOME/.config"
+            export XDG_CACHE_HOME="$HOME/.cache"
+            env | grep -i "^XDG" || true
             rm -rf "$HOME/.cache/ibus"
             ibus-daemon -drx --panel=disable > /tmp/ibus.log 2>&1 &
             sleep 8
