@@ -55,13 +55,18 @@ jobs:
           HOME: /tmp/imehome
         run: |
           dbus-run-session -- xvfb-run -a bash -euxo pipefail -c '
-            ibus-daemon -drx --panel=disable -v > /tmp/ibus.log 2>&1 &
+            rm -rf "$HOME/.cache/ibus"
+            ibus-daemon -drx --panel=disable > /tmp/ibus.log 2>&1 &
             sleep 8
-            ibus list-engine | tee /tmp/engines.txt
+            ibus write-cache || true
+            ibus restart || true
+            sleep 6
+            ibus list-engine > /tmp/engines.txt 2>&1 || true
+            grep -i "bangla" /tmp/engines.txt || echo "NO BANGLA ENGINE IN LIST"
             grep -q "bangla-likho" /tmp/engines.txt
-            ibus engine bangla-likho
-            sleep 3
-            ibus engine | tee /tmp/current.txt
+            ibus engine bangla-likho || true
+            sleep 4
+            ibus engine | tee /tmp/current.txt || true
             grep -q "bangla-likho" /tmp/current.txt
           '
 
