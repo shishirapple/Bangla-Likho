@@ -212,8 +212,12 @@ $(printf '\033[1;32m')Bangla Likho ${VERSION} installed.$(printf '\033[0m')
 
   Notes for Linux
   ---------------
-  * Global keyboard capture needs an X11 session. On Wayland the compositor
-    blocks it; log out and choose "X11" (or "Xorg") in the login screen.
-  * Bengali text is typed with XTest, so it works in terminals and editors too.
+  * The recommended way to type on Wayland/KDE is the IBus input method:
+        sudo bash "${DATA_DIR}/app/ime/install-ime.sh" --system
+    It types Bengali in every application and needs no global key capture.
+  * Without the input method, global capture needs an X11 session; Wayland
+    blocks it, so log out and choose "X11" (or "Xorg") at the login screen.
   * Uninstall with:  ${HERE}/install.sh --uninstall
+
+  IBus input method : sudo bash "${DATA_DIR}/app/ime/install-ime.sh" --system
 EOF

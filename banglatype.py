@@ -309,6 +309,7 @@ def run_diagnostics() -> int:
         add("hotkeys", "%s (Bangla/English) · %s (voice)" %
             (cfg.get("hotkey_toggle", "f10").upper(), cfg.get("hotkey_voice", "f9").upper()))
         add("text insertion", cfg.get("linux_insertion", "auto"))
+        add("IBus engine", "installed" if ime_installed() else "not installed")
 
     try:
         import soundfile
@@ -562,6 +563,16 @@ if QtWidgets is not None:
         return False
 
     # ------------------------------------------------------------------- main
+    def ime_installed() -> bool:
+        """True when the IBus engine is registered for this machine."""
+        if not IS_LINUX:
+            return False
+        candidates = [
+            "/usr/share/ibus/component/bangla-likho.xml",
+            os.path.expanduser("~/.local/share/ibus/component/bangla-likho.xml"),
+        ]
+        return any(os.path.exists(path) for path in candidates)
+
     def main() -> None:
         install_crash_logging()
         global SAFE_MODE
@@ -886,11 +897,22 @@ if QtWidgets is not None:
         # which matters on a 2 GB machine.
 
         breadcrumb("before-backend")
-        typing_ready = backend.start() if not SAFE_MODE else False
-        breadcrumb("after-backend:%s" % typing_ready)
+        use_ime = IS_LINUX and ime_installed() and "--hook" not in sys.argv
+        if SAFE_MODE:
+            typing_ready = False
+        elif use_ime:
+            # The IBus engine types into every application natively. Running the
+            # X11 hook as well would convert the same keys twice.
+            typing_ready = None
+        else:
+            typing_ready = backend.start()
+        breadcrumb("after-backend:%s ime=%s" % (typing_ready, use_ime))
         if typing_ready is False:
             bridge.status.emit("টাইপিং লেয়ার চালু হয়নি — X11 সেশন দরকার")
             diagnostic_event("typing_layer_failed")
+        elif typing_ready is None:
+            bridge.status.emit("IBus ইনপুট মেথড দিয়ে বাংলা টাইপিং চালু")
+            diagnostic_event("typing_layer_ready")
         else:
             diagnostic_event("typing_layer_ready")
         if wayland_session or typing_ready is False:

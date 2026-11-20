@@ -73,6 +73,17 @@ chmod +x BanglaLikho-*.AppImage
 ./BanglaLikho-*.AppImage
 ```
 
+**Linux — the recommended way (works on Wayland and KDE):** install the IBus
+input method. It types Bengali natively in every application:
+
+```bash
+sudo apt install ibus python3-gi gir1.2-ibus-1.0
+sudo bash ime/install-ime.sh --system
+```
+
+Then choose *Bangla Likho (Phonetic)* in your desktop's input-method settings —
+see [docs/INPUT_METHOD.md](docs/INPUT_METHOD.md) for the KDE steps.
+
 **A note about Wayland:** global keyboard capture is blocked by Wayland
 compositors. Bangla Likho needs an **X11 session** — at the login screen choose
 “X11”/“Xorg” (on Zorin: *“Zorin Desktop on Xorg”*) instead of “Wayland”.
