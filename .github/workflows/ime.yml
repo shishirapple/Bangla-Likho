@@ -41,13 +41,26 @@ jobs:
         env:
           HOME: /tmp/imehome
         run: |
+          echo "HOME=$HOME"
+          echo "----- component dir -----"
+          ls -la "$HOME/.local/share/ibus/component/"
           echo "----- component xml -----"
           cat "$HOME/.local/share/ibus/component/bangla-likho.xml"
-          echo "----- write-cache -----"
-          ibus write-cache || true
-          echo "----- cache files -----"
-          find "$HOME/.cache" -type f 2>/dev/null | head -20
-          echo "----- python check -----"
+          echo "----- python parse of the component -----"
+          /usr/bin/python3 - <<'PY'
+          import gi
+          gi.require_version("IBus", "1.0")
+          from gi.repository import IBus
+          path = "/tmp/imehome/.local/share/ibus/component/bangla-likho.xml"
+          try:
+              component = IBus.Component.new_from_file(path)
+              print("parsed:", component.get_name())
+              for engine in component.get_engines():
+                  print("  engine:", engine.get_name(), "|", engine.get_longname())
+          except Exception as exc:
+              print("PARSE FAILED:", repr(exc))
+          PY
+          echo "----- engine --check -----"
           "$HOME/.local/bin/bangla-likho-ime" --check 2>&1 | head -5 || true
 
       - name: The daemon lists and activates the engine
