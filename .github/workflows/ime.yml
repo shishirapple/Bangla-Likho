@@ -37,13 +37,26 @@ jobs:
           test -x "$HOME/.local/bin/bangla-likho-ime"
           ls -la "$HOME/.local/share/bangla-likho/ime"
 
+      - name: Inspect what was installed
+        env:
+          HOME: /tmp/imehome
+        run: |
+          echo "----- component xml -----"
+          cat "$HOME/.local/share/ibus/component/bangla-likho.xml"
+          echo "----- write-cache -----"
+          ibus write-cache || true
+          echo "----- cache files -----"
+          find "$HOME/.cache" -type f 2>/dev/null | head -20
+          echo "----- python check -----"
+          "$HOME/.local/bin/bangla-likho-ime" --check 2>&1 | head -5 || true
+
       - name: The daemon lists and activates the engine
         env:
           HOME: /tmp/imehome
         run: |
           dbus-run-session -- xvfb-run -a bash -euxo pipefail -c '
-            ibus-daemon -drx --panel=disable > /tmp/ibus.log 2>&1 &
-            sleep 6
+            ibus-daemon -drx --panel=disable -v > /tmp/ibus.log 2>&1 &
+            sleep 8
             ibus list-engine | tee /tmp/engines.txt
             grep -q "bangla-likho" /tmp/engines.txt
             ibus engine bangla-likho

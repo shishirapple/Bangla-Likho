@@ -148,6 +148,16 @@ class BanglaLikhoEngine(object):
 
 
 def main() -> int:
+    if "--check" in sys.argv:
+        # Print what is available without connecting to a daemon.
+        from ime.phonetic_buffer import PhoneticBuffer
+        buffer = PhoneticBuffer(engine_factory=_make_engine)
+        buffer.type("k")
+        print("buffer ok, candidates for 'k':", buffer.candidates)
+        import gi
+        gi.require_version("IBus", "1.0")
+        print("IBus bindings ok")
+        return 0
     import gi
     gi.require_version("IBus", "1.0")
     from gi.repository import IBus
