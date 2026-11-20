@@ -89,8 +89,15 @@ jobs:
 
       - name: Show IBus log
         if: always()
+        env:
+          HOME: /tmp/imehome
         run: |
-          echo "----- ibus.log -----"
-          cat /tmp/ibus.log 2>/dev/null || true
-          echo "----- engines -----"
-          cat /tmp/engines.txt 2>/dev/null || true
+          echo "----- ibus.log (component/registry lines) -----"
+          grep -i -E "component|registry|bangla|error|fail" /tmp/ibus.log 2>/dev/null | tail -40 || true
+          echo "----- registry cache -----"
+          find /tmp/imehome/.cache /root/.cache /home/runner/.cache -name registry 2>/dev/null || true
+          for f in $(find /tmp/imehome/.cache -name registry 2>/dev/null); do
+            echo "== $f"; strings "$f" 2>/dev/null | grep -i bangla || echo "(no bangla in registry)"
+          done
+          echo "----- glib user data dir -----"
+          /usr/bin/python3 -c "from gi.repository import GLib; print(GLib.get_user_data_dir()); print(GLib.get_user_cache_dir())"
